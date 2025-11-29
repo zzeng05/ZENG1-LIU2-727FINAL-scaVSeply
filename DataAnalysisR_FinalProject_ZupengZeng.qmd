@@ -25,68 +25,56 @@ format:
 # Socio-Economic Background
 
 |   Williamsburg, Virginia, known for its historical significance and educational institutions, presents a paradox within its socio-economic landscape. Despite a reputation as a peaceful, tourist-driven city, Williamsburg struggles with a significant housing crisis that reflects broader socio-economic challenges. A low poverty rate is offset by a high housing burden, where a substantial portion of residents—especially those working in essential local industries—face steep costs to maintain stable housing. Tourism and education drive the city’s economy, yet many workers cannot afford to live within city limits, as high property values and rents cater more to short-term tourist needs than to long-term residents (Trivette 2021).
-|   This fragile socio-economic structure left Williamsburg particularly vulnerable to the impacts of the COVID-19 pandemic. The pandemic disrupted many aspects of society, housing stability among them. In response, various regions, including Virginia, implemented eviction moratoriums and tenant protection laws to mitigate the pandemic’s economic strain (Oliver 2020). However, these temporary measures also highlighted ongoing issues in eviction policies, revealing both the strengths and weaknesses of intervention efforts. By examining eviction case records from Williamsburg and James City County before and during the COVID-19 outbreak, this study aims to identify shifts in eviction dynamics. This analysis seeks to provide insights for stakeholders—policymakers, legal professionals, and public advocates—about the effectiveness of these measures and the challenges that remain for housing stability.
-
+| 
 
 # Literature Review
 
 |   The issue of eviction and housing instability has garnered significant attention in social scientific research, notably through the work of Matthew Desmond, whose seminal work *Evicted* provides a critical examination of the eviction crisis and its cascading impacts on poverty, inequality, and social stability (Desmond 2016). Desmond and others argue that housing insecurity is both a consequence and a driver of broader socio-economic inequality. Eviction disrupts lives, leading to job loss, educational setbacks, and long-term economic hardship, which Desmond describes as a cause, not just a condition, of poverty(Desmond 2016:2).
-|   Research further highlights the legal and policy frameworks that shape eviction practices. In states with pro-landlord legislation, eviction laws tend to favor property owners’ rights over tenants’ protections, facilitating quicker eviction processes. Conversely, states with more tenant-centered policies may offer some legal reprieve, such as eviction moratoriums or extended notice periods, which can mitigate the immediate risk of homelessness. This disparity underscores the impact of policy on housing stability and the role of government in either perpetuating or alleviating eviction cycles(Garboden and Rosen 2019; Purser 2016).
-|   In Williamsburg, where a pro-business environment limits tenant protections, the housing crisis is exacerbated by state policies that prioritize landlord rights. This context illustrates the complexity of eviction as both a legal process and a socio-economic phenomenon. Williamsburg’s low-wage workforce, coupled with minimal tenant protections, contributes to an eviction rate that disproportionately impacts vulnerable residents. This study builds on Desmond’s framework by examining local eviction data to understand how these dynamics unfolded in Williamsburg, particularly during the COVID-19 pandemic, which amplified housing insecurity across many American communities. The research aims to provide insights into how economic policies, legal structures, and social inequalities intersect to shape housing stability.
+|   
 \newpage
 
 \begin{center} {\large \textbf{Exploratory Data Analysis Executive Summary}\par} \end{center}
 
-- **Project Objective**: The exploratory data analysis aims to investigate the impact of the COVID-19 epidemic on eviction practices within Williamsburg and James City County, aiming to understand how policy changes and economic conditions influenced eviction cases.
-- **Data Source**: The study utilizes eviction case docket information from 2019 and 2022 sourced from Williamsburg & James City County Court, specifically focusing on cases categorized as 'Unlawful Detainer'.
-- **Data Reliability**: The data is considered reliable, directly obtained from official court records. Assumptions include the consistency in data recording and the representativeness of the selected years for pre- and post-epidemic conditions.
-- **Shifts in Principal Amount Distribution**: The median principal amount claimed in eviction cases significantly increased from the pre-pandemic to the post-pandemic period, suggesting heightened financial stress on tenants.
-- **Stability in Attorney Representation**: There was no significant change in the rate of attorney representation between the two periods, suggesting stable but potentially inequitable access to legal aid across both periods.
-- **Changes in Judgment Outcomes**:  The distribution of case outcomes shifted, with an increase in case dismissals post-pandemic, indicating a possible leniency or changes in the adjudication of cases due to new eviction protection measures.
-- **Extended Case Durations**: The average case time length increased, highlighting the pandemic's impact on court processing times and possibly more contested or complex cases.
-- **Limitations of the Analysis**: The study's findings are limited to one geographic area and may not be generalizable to other regions. Additionally, the data only spans two specific years, which may not fully capture long-term trends.
-
+- **Project Objective**: 
+- **Data Source**: 
+- **Data Reliability**:
+- **THEME FOUND123**: 
+- **Limitations of the Analysis**: 
 \newpage
 
 # Research Questions
 
-- How have eviction policy changes carried out in response to the epidemic?
-- What are the implications of these changes for tenants and landlords?
+- 
+- 
 
 # Data Source and Assumptions
 
-The primary dataset, sourced from the Williamsburg & James City County Court docket system, includes eviction case records from June-July of 2019 and 2022. Collected under academic supervision and with court cooperation, this data is considered reliable. The focus on pre- and post-COVID eviction dynamics within a specific locality may limit generalizability. Assumptions include the accuracy of recorded data and the completeness of key variables, such as ‘Principal Amount’ and ‘Case Time Length,’ with the expectation that any missing data or anomalies minimally impact the analysis.
+
 
 # Data Cleaning Process 
 
-Data cleaning included standardizing dates and financial figures, anonymizing personal information, and addressing missing values through context-based imputation or exclusion. Duplicate entries and inconsistent formatting of key variables, like ‘Filed Date’ and ‘Hearing Date,’ were corrected for temporal analysis. Outliers in ‘Principal Amount’ and ‘Judgement’ categories were verified against court documents or removed if unresolvable, refining the data for focused analysis on legal representation and financial claims in eviction outcomes.
+
 
 # Notable Findings
 
 ***Finding 1.***
-Shift in Principal Amount Distribution
+Finding Theme
 
-The median principal amount claimed in eviction cases significantly increased from the pre-pandemic to the post-pandemic period, suggesting heightened financial stress on tenants (See Figure 1 and Table 1).
+State the finding in a few lines (See Figure 1 and Table 1).
 
 ***Finding 2.***
-Stability in Attorney Representation
-
-Despite the pandemic, the rate of attorney representation in eviction cases did not significantly change. This stability underscores persistent barriers to accessing legal assistance in eviction processes, despite increased financial and legal pressures (See Figure 2 and Table 2).
+ (See Figure 2 and Table 2).
 
 ***Finding 3.***
-Changes in Judgment Outcomes
-
-Data shows a decline in plaintiff victories and a rise in non-suits and dismissals, suggesting that pandemic-related protections, such as eviction moratoriums, may be effectively shielding tenants from eviction and promoting outcomes in their favor (See Figure 3 and Table 3).
+(See Figure 3 and Table 3).
 
 ***Finding 4.***
-Extended Case Duration
-
-The pandemic has notably affected judicial proceedings in eviction cases, with a shift towards longer case duration. Pre-pandemic, cases were generally shorter, whereas now there is a wider spread in duration, likely due to judicial delays and more complex case profiles during the pandemic (See Figure 4 and Table 4).
+(See Figure 4 and Table 4).
 \ 
 
 # Limitations
 
-While the findings provide insights into the epidemic's impact on eviction practices, they are constrained by the dataset's geographical and temporal limits. The dataset may not represent all eviction cases in Virginia or the broader United States. Furthermore, the legal complexity and variability between cases may obscure broader trends.
+
 \newpage 
 
 # Data Visualizations & Tables
@@ -94,13 +82,63 @@ While the findings provide insights into the epidemic's impact on eviction pract
 ```{r setup}
 #| warning: false
 #| echo: false
+#| message: false
 # Import Libraries
 library(tidyverse)
-library(openxlsx)
-library(dplyr)
+library(lubridate)
+library(rvest)
+library(zoo)        # for rolling correlations
+library(broom)      # for regression summaries
 library(ggplot2)
-library(kableExtra)
+library(stringr)
+library(readxl)
 ```
+
+
+```{r}
+cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
+
+#Read the HTML and grab all tables
+cs_tables <- read_html(cs_url) %>%
+  html_elements("table") %>%
+  html_table(fill = TRUE)
+
+# 3) Rename columns and drop the first row ("Month", "Year", "Index")
+cs_index <- cs_tables[[2]] %>%
+  rename(
+    month_chr = X1,
+    year_chr  = X2,
+    cs_chr    = X3
+  ) %>%
+  slice(-1) %>%                          # remove header row inside the table
+  mutate(
+    month = as.integer(month_chr),
+    year  = as.integer(year_chr),
+    cs    = as.numeric(cs_chr),
+    date  = ymd(sprintf("%04d-%02d-01", year, month))
+  ) %>%
+  arrange(date) %>%
+  select(date, cs, year, month)
+
+head(cs_index)
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 #| echo: false
@@ -302,48 +340,20 @@ case_time_stats %>%
 
 \newpage 
 
-# Policy Recommendations
+# Indications
 **Strengthening Tenant Protections.**
-The pandemic-era eviction moratoriums demonstrated that temporary protections can stabilize housing. Establishing permanent measures—such as extended notice periods, rent increase caps, and legal support for tenants—could provide long-term security for vulnerable populations.
 
-**Expanding Access to Legal Aid.**
-Observed disparities in legal representation highlight the need for accessible legal aid. Increasing affordable or free legal services for tenants could enhance their ability to navigate eviction proceedings and reduce vulnerability in disputes.
 
-**Targeted Economic Relief Programs.**
-Financial support for low-income households, such as rental assistance, tax credits, or emergency funds, could help mitigate eviction risks by easing tenants’ financial burdens during economic downturns..
-
-**Investing in Affordable Housing.**
-High housing costs, particularly in tourist-centric areas like Williamsburg, necessitate local investment in affordable housing. Public-private partnerships can foster housing solutions tailored to the needs of local workers rather than transient populations.
-
-**Data-Driven Policy Adjustments.**
-Ongoing eviction data analysis allows policymakers to refine interventions based on housing trends. Tracking eviction rates, court outcomes, and housing costs can reveal gaps in support and identify areas where policies may need adjustment.
 \newpage
 
 # Conclusion & Outlook
 
 |   The COVID-19 pandemic intensified pre-existing challenges in the U.S. housing system, with eviction practices in Williamsburg and James City County illustrating how policies and socio-economic factors shape housing stability(Oliver 2020; Trivette 2021). This research examined shifts in eviction rates, legal outcomes, and financial burdens on tenants and landlords before and during the pandemic. Increases in case dismissals and non-suits, alongside decreased plaintiff victories, suggest that pandemic-era tenant protections had an impact. Additionally, the rise in principal amounts over time may reflect extended case durations due to the processing time of the Rent Relief Program, though further investigation is needed to confirm this correlation.
-|   A notable finding was the stable yet inequitable access to legal representation, with many tenants lacking resources to effectively navigate eviction proceedings(Garboden and Rosen 2019). However, this study’s data, primarily from the Williamsburg & James City County Court system, represents only a subset of Virginia eviction cases. Future research with broader datasets could offer more comprehensive insights into how various communities and policy contexts respond to housing challenges.
-|   Combining local data with socio-economic analysis can empower policymakers and community advocates to develop targeted interventions that address both the immediate impacts and systemic drivers of eviction, promoting a more resilient and equitable housing landscape(Desmond 2016).
+
 \newpage 
 
 # References
 
-Desmond, Matthew. 2016. Evicted: Poverty and Profit in the American City. New York: Crown Publishers.
-
-Eviction Lab. n.d. “National Eviction Map.” Retrieved April 20, 2024 (https://evictionlab.org).
-
-Garboden, Philip M. E., and Eva Rosen. 2019. “Serial Filing: How Landlords Use the Threat of Eviction.” City & Community 18(2):638-661. doi:10.1111/cico.12387.
-
-Purser, Gretchen. 2016. “The Circle of Dispossession: Evicting the Urban Poor in Baltimore.” Critical Sociology 42(3):393-415. doi:10.1177/0896920514524606.
-
-Trivette, Andrew. 2021. “Affordable Housing Report.” Retrieved December 17, 2021 (https://williamsburg.civicweb.net/document/38278/Presentation%20and%20
-DIscussion%20of%20the%20Affordable%20H.pdf?handle=F9D802BB164A4913988671B177B55C7A).
-
-Oliver, Ned. 2020. “Landlords Ask Supreme Court of Virginia to Make Evictions Easier.” Virginia Mercury, October 12. Retrieved May 20, 2024 (https://www.virginiamercury.com/2020/10/12/landlords-ask-supreme-court-of-virginia-to-make-evictions-easier/).
-
-Williamsburg & James City County Court System. n.d. “Case Information.” Retrieved May 20, 2024 (https://eapps.courts.state.va.us/gdcourts).
-
-Warren, Linda. 2007. “Eviction Sequence.” Feminist Studies 33(3):566-568.
 
 
 
