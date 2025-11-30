@@ -127,7 +127,7 @@ head(cs_index)
 
 
 ```{r}
-bls_key <- read_file("/Users/zpzzz/Desktop/SURV727/bls_key.txt") |> str_trim()
+bls_key <- "554489bce3f14059aaa2dbb976d62372"
 
 library(httr)
 library(jsonlite)
@@ -159,6 +159,7 @@ stop_for_status(res)
 bls_json <- content(res, as = "text", encoding = "UTF-8")
 bls_list <- fromJSON(bls_json, simplifyDataFrame = TRUE)
 ```
+
 ```{r}
 library(purrr)
 library(dplyr)
@@ -209,9 +210,84 @@ jobs_ces <- bls_long %>%
   )
 ```
 
+### Table 25 Current Business Conditions Compared with a Year Ago
+```{r}
+table25_data <- list(
+  table = "25",
+  format = "html",
+  from = "2008",
+  to = "2025",
+  freq = "monthly"
+)
 
+res <- POST(cs_url, body = table25_data, encode = "form")
 
+page <- read_html(res)
 
+tab25 <- page %>%
+  html_node("div.output table") %>%
+  html_table(fill = TRUE)
+
+tab25
+```
+
+```{r}
+clean_tab25 <- tab25 %>%
+  { setNames(., as.character(unlist(.[1, ]))) } %>%
+  slice(-1) %>%
+  mutate(
+    Month = as.integer(Month),
+    Year  = as.integer(Year),
+    `Better Now` = as.numeric(`Better Now`),
+    Same         = as.numeric(Same),
+    `Worse Now`  = as.numeric(`Worse Now`),
+    `DK; NA`     = as.numeric(`DK; NA`),
+    Relative     = as.numeric(Relative),
+    date         = as.Date(sprintf("%04d-%02d-01", Year, Month))
+  ) %>%
+  relocate(date)
+
+clean_tab25
+```
+
+### Table 30 Expected Change in Unemployment During the Next Year
+```{r}
+table30_data <- list(
+  table = "30",
+  format = "html",
+  from = "2008",
+  to = "2025",
+  freq = "monthly"
+)
+
+res <- POST(cs_url, body = table30_data, encode = "form")
+
+page <- read_html(res)
+
+tab30 <- page %>%
+  html_node("div.output table") %>%
+  html_table(fill = TRUE)
+
+tab30
+```
+
+```{r}
+clean_tab30 <- tab30 %>%
+  { setNames(., as.character(unlist(.[1, ]))) } %>%
+  slice(-1) %>%
+  mutate(
+    Month = as.integer(Month),
+    Year  = as.integer(Year),
+    Less  = as.numeric(Less),
+    Same  = as.numeric(Same),
+    More  = as.numeric(More),
+    `DK; NA` = as.numeric(`DK; NA`),
+    Relative = as.numeric(Relative),
+    date = as.Date(sprintf("%04d-%02d-01", Year, Month))
+  ) %>%
+  relocate(date) 
+clean_tab30
+```
 
 
 
