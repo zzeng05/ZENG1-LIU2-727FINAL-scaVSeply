@@ -17,7 +17,7 @@ format:
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.382pt}
 
-\begin{center} \includegraphics[width=0.3\columnwidth]{wm_vertical_single_line_full_color} \end{center}
+\begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
 
 \begin{center} {\Large A Fancy metaphor title: Explain what to explore\par} \end{center}
 \begin{center} {Novembver 2025} \end{center}
@@ -96,6 +96,8 @@ library(readxl)
 
 
 ```{r}
+# Fetch SCA Data
+
 cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
 
 #Read the HTML and grab all tables
@@ -125,10 +127,87 @@ head(cs_index)
 
 
 ```{r}
+bls_key <- read_file("/Users/zpzzz/Desktop/SURV727/bls_key.txt") |> str_trim()
 
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+# BLS series IDs:
+# - LNS14000000: Unemployment rate (CPS, seasonally adjusted)
+# - CES0000000001: All employees, total nonfarm (CES, thousands, SA)
+series_ids <- c("LNS14000000", "CES0000000001")
+
+# Request monthly data from 2008 to latest (adjust endyear as needed)
+payload <- list(
+  seriesid        = series_ids,
+  startyear       = "2008",
+  endyear         = "2025",      # change if you want a different end year
+  registrationkey = bls_key
+)
+
+res <- POST(
+  url   = "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+  body  = payload,
+  encode = "json"
+)
+
+stop_for_status(res)
+
+bls_json <- content(res, as = "text", encoding = "UTF-8")
+bls_list <- fromJSON(bls_json, simplifyDataFrame = TRUE)
 ```
+```{r}
+library(purrr)
+library(dplyr)
+library(stringr)
+library(lubridate)
 
+series_tbl <- bls_list$Results$series
 
+bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
+  series_id <- series_tbl$seriesID[i]
+  dat       <- series_tbl$data[[i]]   # this is a data.frame for that series
+  
+  as_tibble(dat) %>%
+    transmute(
+      series_id = series_id,
+      year      = as.integer(year),
+      period,
+      value     = as.numeric(value)
+    ) %>%
+    # keep monthly observations (M01–M12)
+    filter(str_starts(period, "M")) %>%
+    mutate(
+      month = as.integer(str_remove(period, "M")),
+      date  = ymd(sprintf("%04d-%02d-01", year, month))
+    )
+})
+
+head(bls_long)
+```
+```{r}
+# CPS unemployment rate
+unemp_cps <- bls_long %>%
+  filter(series_id == "LNS14000000") %>%
+  arrange(date) %>%
+  transmute(
+    date,
+    unrate = value
+  )
+
+# CES total nonfarm employment & monthly job change
+jobs_ces <- bls_long %>%
+  filter(series_id == "CES0000000001") %>%
+  arrange(date) %>%
+  transmute(
+    date,
+    nonfarm_emp = value,
+    job_change  = nonfarm_emp - lag(nonfarm_emp)
+  )
+```
 
 
 
