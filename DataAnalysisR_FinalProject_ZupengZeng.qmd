@@ -92,27 +92,52 @@ library(broom)      # for regression summaries
 library(ggplot2)
 library(stringr)
 library(readxl)
+library(httr)
+library(jsonlite)
+library(purrr)
+
 ```
 
 
 ```{r}
 # Fetch SCA Data
-
 cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
 
-#Read the HTML and grab all tables
-cs_tables <- read_html(cs_url) %>%
-  html_elements("table") %>%
-  html_table(fill = TRUE)
+#a function to fetch any sca table from data site
+get_sca_table <- function(table_num,
+                               from_year = 2008,
+                               to_year   = 2025,
+                               freq      = "monthly") {
+  
+  body_list <- list(
+    table = as.character(table_num),
+    format = "html",
+    from   = as.character(from_year),
+    to     = as.character(to_year),
+    freq   = freq
+  )
+  
+  res <- POST(cs_url, body = body_list, encode = "form")
+  stop_for_status(res)
+  
+  page <- read_html(res)
+  
+  page %>%
+    html_node("div.output table") %>%
+    html_table(fill = TRUE)
+}
+```
 
-# 3) Rename columns and drop the first row ("Month", "Year", "Index")
-cs_index <- cs_tables[[2]] %>%
+```{r}
+#fetch & clean table1: Consumer Sentiment Index
+CS <- get_sca_table(1) %>%
+  # same logic as your cs_tables[[2]] cleaning
   rename(
     month_chr = X1,
     year_chr  = X2,
     cs_chr    = X3
   ) %>%
-  slice(-1) %>%                          # remove header row inside the table
+  slice(-1) %>%  # drop the header row inside the table
   mutate(
     month = as.integer(month_chr),
     year  = as.integer(year_chr),
@@ -122,50 +147,78 @@ cs_index <- cs_tables[[2]] %>%
   arrange(date) %>%
   select(date, cs, year, month)
 
-head(cs_index)
+head(CS)
+```
+
+```{r}
+#fetch & clean table25: current business conditions compared with a year ago
+BZC <- get_sca_table(25) %>%
+  { setNames(., as.character(unlist(.[1, ]))) } %>%
+  slice(-1) %>%
+  mutate(
+    Month       = as.integer(Month),
+    Year        = as.integer(Year),
+    `Better Now`= as.numeric(`Better Now`),
+    Same        = as.numeric(Same),
+    `Worse Now` = as.numeric(`Worse Now`),
+    `DK; NA`    = as.numeric(`DK; NA`),
+    Relative    = as.numeric(Relative),
+    date        = as.Date(sprintf("%04d-%02d-01", Year, Month))
+  ) %>%
+  relocate(date)
+
+head(BZC)
+```
+
+```{r}
+#fetch & clean table30: Expected Change in Unemployment During the Next Year
+UNEPLY1 <- get_sca_table(30) %>%
+  { setNames(., as.character(unlist(.[1, ]))) } %>%
+  slice(-1) %>%
+  mutate(
+    Month = as.integer(Month),
+    Year  = as.integer(Year)
+  ) %>%
+  mutate(
+    across(
+      -c(Month, Year),
+      ~ suppressWarnings(as.numeric(.))
+    ),
+    date = as.Date(sprintf("%04d-%02d-01", Year, Month))
+  ) %>%
+  relocate(date)
+
+head(UNEPLY1)
 ```
 
 
-```{r}
-bls_key <- "554489bce3f14059aaa2dbb976d62372"
 
-library(httr)
-library(jsonlite)
-library(dplyr)
-library(tidyr)
-library(lubridate)
+```{r}
+# Fetch BLS Data
+
+bls_key <- "554489bce3f14059aaa2dbb976d62372" #need to change back to path before submission!!!
 
 # BLS series IDs:
 # - LNS14000000: Unemployment rate (CPS, seasonally adjusted)
 # - CES0000000001: All employees, total nonfarm (CES, thousands, SA)
 series_ids <- c("LNS14000000", "CES0000000001")
 
-# Request monthly data from 2008 to latest (adjust endyear as needed)
-payload <- list(
-  seriesid        = series_ids,
-  startyear       = "2008",
-  endyear         = "2025",      # change if you want a different end year
-  registrationkey = bls_key
-)
-
+# Request monthly data from 2008 to latest
 res <- POST(
   url   = "https://api.bls.gov/publicAPI/v2/timeseries/data/",
-  body  = payload,
+  body  = list(
+  seriesid        = series_ids,
+  startyear       = "2008",
+  endyear         = "2025",
+  registrationkey = bls_key),
   encode = "json"
 )
 
 stop_for_status(res)
 
-bls_json <- content(res, as = "text", encoding = "UTF-8")
-bls_list <- fromJSON(bls_json, simplifyDataFrame = TRUE)
-```
+bls_list <- fromJSON(content(res, as = "text", encoding = "UTF-8"), simplifyDataFrame = TRUE)
 
-```{r}
-library(purrr)
-library(dplyr)
-library(stringr)
-library(lubridate)
-
+# Transform BLS data to long format
 series_tbl <- bls_list$Results$series
 
 bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
@@ -191,7 +244,7 @@ head(bls_long)
 ```
 ```{r}
 # CPS unemployment rate
-unemp_cps <- bls_long %>%
+UNEPLOY_R <- bls_long %>%
   filter(series_id == "LNS14000000") %>%
   arrange(date) %>%
   transmute(
@@ -200,7 +253,7 @@ unemp_cps <- bls_long %>%
   )
 
 # CES total nonfarm employment & monthly job change
-jobs_ces <- bls_long %>%
+Job_V <- bls_long %>%
   filter(series_id == "CES0000000001") %>%
   arrange(date) %>%
   transmute(
@@ -208,86 +261,14 @@ jobs_ces <- bls_long %>%
     nonfarm_emp = value,
     job_change  = nonfarm_emp - lag(nonfarm_emp)
   )
+
+head(UNEPLOY_R)
+head(Job_V)
 ```
 
-### Table 25 Current Business Conditions Compared with a Year Ago
-```{r}
-table25_data <- list(
-  table = "25",
-  format = "html",
-  from = "2008",
-  to = "2025",
-  freq = "monthly"
-)
 
-res <- POST(cs_url, body = table25_data, encode = "form")
 
-page <- read_html(res)
 
-tab25 <- page %>%
-  html_node("div.output table") %>%
-  html_table(fill = TRUE)
-
-tab25
-```
-
-```{r}
-clean_tab25 <- tab25 %>%
-  { setNames(., as.character(unlist(.[1, ]))) } %>%
-  slice(-1) %>%
-  mutate(
-    Month = as.integer(Month),
-    Year  = as.integer(Year),
-    `Better Now` = as.numeric(`Better Now`),
-    Same         = as.numeric(Same),
-    `Worse Now`  = as.numeric(`Worse Now`),
-    `DK; NA`     = as.numeric(`DK; NA`),
-    Relative     = as.numeric(Relative),
-    date         = as.Date(sprintf("%04d-%02d-01", Year, Month))
-  ) %>%
-  relocate(date)
-
-clean_tab25
-```
-
-### Table 30 Expected Change in Unemployment During the Next Year
-```{r}
-table30_data <- list(
-  table = "30",
-  format = "html",
-  from = "2008",
-  to = "2025",
-  freq = "monthly"
-)
-
-res <- POST(cs_url, body = table30_data, encode = "form")
-
-page <- read_html(res)
-
-tab30 <- page %>%
-  html_node("div.output table") %>%
-  html_table(fill = TRUE)
-
-tab30
-```
-
-```{r}
-clean_tab30 <- tab30 %>%
-  { setNames(., as.character(unlist(.[1, ]))) } %>%
-  slice(-1) %>%
-  mutate(
-    Month = as.integer(Month),
-    Year  = as.integer(Year),
-    Less  = as.numeric(Less),
-    Same  = as.numeric(Same),
-    More  = as.numeric(More),
-    `DK; NA` = as.numeric(`DK; NA`),
-    Relative = as.numeric(Relative),
-    date = as.Date(sprintf("%04d-%02d-01", Year, Month))
-  ) %>%
-  relocate(date) 
-clean_tab30
-```
 
 
 
