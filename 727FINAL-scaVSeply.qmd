@@ -25,11 +25,6 @@ format:
 
 |   Williamsburg, Virginia, known for its historical significance and educational institutions, presents a paradox within its socio-economic landscape. Despite a reputation as a peaceful, tourist-driven city, Williamsburg struggles with a significant housing crisis that reflects broader socio-economic challenges. A low poverty rate is offset by a high housing burden, where a substantial portion of residents—especially those working in essential local industries—face steep costs to maintain stable housing. Tourism and education drive the city’s economy, yet many workers cannot afford to live within city limits, as high property values and rents cater more to short-term tourist needs than to long-term residents (Trivette 2021).
 | 
-
-# Literature Review
-
-|   The issue of eviction and housing instability has garnered significant attention in social scientific research, notably through the work of Matthew Desmond, whose seminal work *Evicted* provides a critical examination of the eviction crisis and its cascading impacts on poverty, inequality, and social stability (Desmond 2016). Desmond and others argue that housing insecurity is both a consequence and a driver of broader socio-economic inequality. Eviction disrupts lives, leading to job loss, educational setbacks, and long-term economic hardship, which Desmond describes as a cause, not just a condition, of poverty(Desmond 2016:2).
-|   
 \newpage
 
 \begin{center} {\large \textbf{Exploratory Data Analysis Executive Summary}\par} \end{center}
@@ -73,7 +68,9 @@ State the finding in a few lines (See Figure 1 and Table 1).
 
 \newpage 
 
-# Data Visualizations & Tables
+# Visualizations
+
+- Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
 
 ```{r setup}
 #| warning: false
@@ -283,6 +280,7 @@ bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
 
 head(bls_long)
 ```
+
 ```{r}
 # CPS unemployment rate
 UNEPLOY_R <- bls_long %>%
@@ -362,12 +360,12 @@ cs_vs_unemp <- function(data,
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- cs_min) * (ur_range / cs_range) + ur_min,
-        name  = paste0("Unemployment rate (%) at t + ", lag_months, " months")
+        name  = paste0("Unemployment rate at t + ", lag_months, " months")
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c("steelblue", "firebrick"),
+        c("darkblue", "firebrick"),
         c("Consumer Sentiment", unemp_label)
       )
     ) +
@@ -382,7 +380,7 @@ cs_vs_unemp <- function(data,
     )
 }
 
-cs_vs_unemp (macro, lag_months = 3)
+cs_vs_unemp (macro, lag_months = 6)
 ```
 ```{r}
 #| echo: false
@@ -390,8 +388,8 @@ cs_vs_unemp (macro, lag_months = 3)
 # function to plot Consumer Sentiment vs Job Change with dual y-axes
 cs_vs_jobs <- function(data,
                                  lag_months  = 3,
-                                 cs_limits   = c(40, 120),       # left y-axis
-                                 jobs_limits = c(-1000, 1000)) { # right y-axis (thousands)
+                                 cs_limits   = c(40, 120), # left y-axis
+                                 jobs_limits = c(-1500, 1500)) {# right y-axis (thousands)
   
   df <- data %>%
     arrange(date) %>%
@@ -421,18 +419,18 @@ cs_vs_jobs <- function(data,
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
-        name  = paste0("Monthly change in nonfarm employment (thousands) at t + ",
+        name  = paste0("Added Job (thousands) at t + ",
                        lag_months, " months")
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c("steelblue", "darkgreen"),
+        c("darkblue", "darkgreen"),
         c("Consumer Sentiment", jobs_label)
       )
     ) +
     labs(
-      title = paste0("Consumer Sentiment vs Future Job Creation (", lag_months, "-month lead)"),
+      title = paste0("Consumer Sentiment vs Added Jobs (", lag_months, "-month lead)"),
       x     = "Date",
       color = NULL
     ) +
@@ -442,7 +440,16 @@ cs_vs_jobs <- function(data,
     )
 }
 
-cs_vs_jobs(macro, lag_months = 3)
+cs_vs_jobs(macro, lag_months =8)
+
+cs_vs_jobs(macro, lag_months =7)
+
+cs_vs_jobs(macro, lag_months =6)
+
+cs_vs_jobs(macro, lag_months =5)
+
+cs_vs_jobs(macro, lag_months =0)
+
 ```
 ```{r}
 ## Main dual-axis plot: CS vs future job creation
@@ -655,7 +662,7 @@ macro2 <- macro %>%
   left_join(UNEPLY_supp, by = "date") %>%
   arrange(date) %>%
   mutate(
-    unrate_3m_delta = lead(unrate, 3) - unrate
+    unrate_3m_delta = lead(unrate, 7) - unrate
   )
 df_scatter <- macro2 %>%
   filter(!is.na(net_unemp_expect), !is.na(unrate_3m_delta))
@@ -697,23 +704,23 @@ plot_expect_vs_unemp_dual <- function(data_macro2,
   
   ggplot(df, aes(x = date)) +
     geom_line(aes(y = net_unemp_expect, color = "Net expectations (Less-More)")) +
-    geom_line(aes(y = unrate_scaled,    color = "Unemployment rate")) +
+    geom_line(aes(y = unrate_scaled,    color = "Unemployment")) +
     scale_y_continuous(
-      name   = "Net % expecting less minus more unemployment",
+      name   = "Net (Less-More) unemployment expectations",
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = "Unemployment rate (%)"
+        name  = "Unemployment"
       )
     ) +
     scale_color_manual(
       values = setNames(
         c("darkgreen", "firebrick"),
-        c("Net expectations (Less-More)", "Unemployment rate")
+        c("Net expectations (Less-More)", "Unemployment")
       )
     ) +
     labs(
-      title = "Net expectations about unemployment vs actual unemployment",
+      title = "Net Unemployment Expectations vs Actual Unemployment",
       x     = "Date",
       color = NULL
     ) +
