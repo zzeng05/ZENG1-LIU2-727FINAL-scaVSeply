@@ -8,70 +8,61 @@ format:
         \usepackage{setspace}
         \doublespacing
 ---
+
 \raggedright
 \pagestyle{fancy}
 \fancyhf{}
-
 \fancyfoot[R]{\thepage}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.382pt}
 \begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
-
 \begin{center}
   {\Large Consumer Sentiments VS. Economy Realities\\
   Longitudinal Analysis of Changing Consumer Perceptions in Relation to Employment\par}
 \end{center}
-
 \begin{center} {Zupeng Zeng \& Troy (Shengkun) Liu} \end{center}
 \begin{center} {December 2025} \end{center}
 \newpage
 
-
 # Socio-Economic Background
+
 | 
 
 \newpage
 
 \begin{center} {\large \textbf{Exploratory Data Analysis Executive Summary}\par} \end{center}
 
-- **Project Objective** 
-- **Data Source** 
-- **Data Reliability**
-- **THEME FOUND123**
-- **Limitations of the Analysis**
+-   **Project Objective**
+-   **Data Source**
+-   **Data Reliability**
+-   **THEME FOUND123**
+-   **Limitations of the Analysis** 
+
 \newpage
 
 # Research Questions
 
-- 
-- 
+-   
+
+-   
 
 # Data Source and Assumptions
 
-
-
-# Data Cleaning Process 
-
-
+# Data Cleaning Process
 
 # Notable Findings
 
-***Finding 1.***
-Finding Theme
+***Finding 1.*** Finding Theme
 
 State the finding in a few lines (See Figure 1).
 
-***Finding 2.***
- (See Figure 2).
+***Finding 2.*** (See Figure 2).
 
-***Finding 3.***
-(See Figure 3).
-\ 
+***Finding 3.*** (See Figure 3).  
 
 # Limitations
 
-
-\newpage 
+\newpage
 
 # Visualizations
 
@@ -95,7 +86,6 @@ library(jsonlite)
 library(purrr)
 
 ```
-
 
 ```{r}
 # Fetch SCA Data
@@ -212,8 +202,6 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
 
 ```
 
-
-
 ```{r}
 # Fetch BLS Data
 
@@ -289,6 +277,7 @@ head(Job_V)
 ```
 
 ## Figure 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
+
 ```{r}
 #| echo: false
 #| warning: false
@@ -301,7 +290,6 @@ macro <- CS %>%
 
 head(macro)
 ```
-
 
 ```{r}
 #| echo: false
@@ -365,6 +353,7 @@ cs_vs_unemp <- function(data,
 
 cs_vs_unemp (macro, lag_months = 6)
 ```
+
 ```{r}
 #| echo: false
 #| warning: false
@@ -434,6 +423,7 @@ cs_vs_jobs(macro, lag_months =5)
 cs_vs_jobs(macro, lag_months =0)
 
 ```
+
 ```{r}
 ## Main dual-axis plot: CS vs future job creation
 ## with unemployment extremes overlaid (no separate y-axis)
@@ -535,10 +525,10 @@ ggplot(df, aes(x = date)) +
   )
 ```
 
-\newpage 
-
+\newpage
 
 ## Figure 2. Scatter: net expectations vs subsequent unemployment change
+
 ```{r}
 #| echo: false
 #| warning: false
@@ -562,8 +552,8 @@ ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
   theme_minimal()
 ```
 
-
 ## Figure 3. Time series: net expectations vs actual unemployment (dual axis)
+
 ```{r}
 plot_expect_vs_unemp_dual <- function(data_macro2,
                                       cs_limits   = c(-60, 60),   # for net expectations
@@ -615,12 +605,11 @@ plot_expect_vs_unemp_dual <- function(data_macro2,
 plot_expect_vs_unemp_dual(macro2)
 ```
 
- 
-\newpage 
+\newpage
 
 # Indications
-**Strengthening Tenant Protections.**
 
+**Strengthening Tenant Protections.**
 
 \newpage
 
@@ -628,12 +617,12 @@ plot_expect_vs_unemp_dual(macro2)
 
 | 
 
-\newpage 
+\newpage
 
 # References
+
 https://data.sca.isr.umich.edu/data-archive/mine.php
+
 https://www.bls.gov/cps
+
 https://www.bls.gov/ces
-
-
-
