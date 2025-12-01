@@ -1,5 +1,4 @@
 ---
-author: "Zupeng Zeng & Troy (Shengkun) Liu"
 format: 
   pdf:
     include-in-header:
@@ -18,9 +17,15 @@ format:
 \renewcommand{\footrulewidth}{0.382pt}
 \begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
 
-\begin{center} {\Large Consumer Sentiments VS. Economy Realities: Longitudinal Analysis of Changing Consumer Perceptions 
-in Relation to Employment\par} \end{center}
-\begin{center} {Novembver 2025} \end{center}
+\begin{center}
+  {\Large Consumer Sentiments VS. Economy Realities\\
+  Longitudinal Analysis of Changing Consumer Perceptions in Relation to Employment\par}
+\end{center}
+
+\begin{center} {Zupeng Zeng \& Troy (Shengkun) Liu} \end{center}
+\begin{center} {December 2025} \end{center}
+\newpage
+
 
 # Socio-Economic Background
 | 
