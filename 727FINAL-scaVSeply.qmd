@@ -12,11 +12,10 @@ format:
 \raggedright
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[L]{Zupeng Zeng & Troy Liu}
+
 \fancyfoot[R]{\thepage}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.382pt}
-
 \begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
 
 \begin{center} {\Large A Fancy metaphor title: Explain what to explore\par} \end{center}
@@ -100,7 +99,7 @@ library(purrr)
 # Fetch SCA Data
 cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
 
-#a function to fetch any sca table from data site
+#function to fetch any sca table from data site
 get_sca_table <- function(table_num,
                                from_year = 2008,
                                to_year   = 2025,
@@ -148,117 +147,23 @@ head(CS)
 ```
 
 ```{r}
-#fetch & clean table25: current business conditions compared with a year ago
-BZC <- get_sca_table(25) %>%
+#fetch & clean table26: Expected change in business condition in a year
+ECB <- get_sca_table(26) %>%
   { setNames(., as.character(unlist(.[1, ]))) } %>%
   slice(-1) %>%
   mutate(
     Month       = as.integer(Month),
     Year        = as.integer(Year),
-    `Better Now`= as.numeric(`Better Now`),
+    `Better`= as.numeric(`Better`),
     Same        = as.numeric(Same),
-    `Worse Now` = as.numeric(`Worse Now`),
+    `Worse` = as.numeric(`Worse`),
     `DK; NA`    = as.numeric(`DK; NA`),
     Relative    = as.numeric(Relative),
     date        = as.Date(sprintf("%04d-%02d-01", Year, Month))
   ) %>%
   relocate(date)
 
-head(BZC)
-```
-
-```{r}
-# From your BZC
-BZC_supp <- BZC %>%
-  transmute(
-    date,
-    better_now = `Better Now`,
-    same_now   = Same,
-    worse_now  = `Worse Now`,
-    dk_now     = `DK; NA`,
-    net_biz    = better_now - worse_now  # >0: net positive view of business conditions
-  )
-
-head(BZC_supp)
-
-BZC_long <- BZC_supp %>%
-  select(date, better_now, same_now, worse_now) %>%
-  pivot_longer(
-    cols = -date,
-    names_to  = "response",
-    values_to = "share"
-  )
-
-ggplot(BZC_long, aes(x = date, y = share, fill = response)) +
-  geom_area(alpha = 0.8) +
-  scale_fill_manual(
-    values = c(
-      better_now = "darkgreen",
-      same_now   = "grey70",
-      worse_now  = "firebrick"
-    ),
-    labels = c("Better Now", "Same", "Worse Now")
-  ) +
-  labs(
-    title = "Current Business Conditions Compared with a Year Ago",
-    x     = "Date",
-    y     = "Percent of respondents",
-    fill  = NULL
-  ) +
-  theme_minimal()
-
-plot_cs_vs_netbiz_dual <- function(data_macro, data_bzc,
-                                   cs_limits  = c(40, 120),
-                                   net_limits = c(-90, 30)) {
-  df <- data_macro %>%
-    select(date, cs) %>%
-    left_join(data_bzc %>% select(date, net_biz), by = "date") %>%
-    filter(!is.na(cs), !is.na(net_biz)) %>%
-    arrange(date)
-  
-  cs_min  <- cs_limits[1]
-  cs_max  <- cs_limits[2]
-  nb_min  <- net_limits[1]
-  nb_max  <- net_limits[2]
-  cs_rng  <- cs_max - cs_min
-  nb_rng  <- nb_max - nb_min
-  
-  df <- df %>%
-    mutate(
-      net_biz_scaled = cs_min + (net_biz - nb_min) * (cs_rng / nb_rng)
-    )
-  
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
-    geom_line(aes(y = net_biz_scaled, color = "Net business conditions (Better-Worse)")) +
-    scale_y_continuous(
-      name   = "Consumer Sentiment Index",
-      limits = cs_limits,
-      sec.axis = sec_axis(
-        trans = ~ (.- cs_min) * (nb_rng / cs_rng) + nb_min,
-        name  = "Net % saying business conditions are better minus worse"
-      )
-    ) +
-    scale_color_manual(
-      values = setNames(
-        c("steelblue", "darkorange"),
-        c("Consumer Sentiment", "Net business conditions (Better-Worse)")
-      )
-    ) +
-    labs(
-      title = "Headline sentiment vs. net views of business conditions",
-      x     = "Date",
-      color = NULL
-    ) +
-    theme_minimal() +
-    theme(legend.position = "bottom")
-}
-
-p_netbiz <- plot_cs_vs_netbiz_dual(macro, BZC_supp,
-                                   cs_limits  = c(40, 120),
-                                   net_limits = c(-90, 30))
-
-p_netbiz
+head(ECB)
 ```
 
 
@@ -640,10 +545,109 @@ ggplot(df, aes(x = date)) +
   )
 ```
 
-
 \newpage 
 
-## Figure 2. Scatter: net expectations vs subsequent unemployment change
+## Figure 2.Time series: net business conditions vs consumer sentiment
+```{r}
+# From ECB (Table 26: Expected change in business conditions in a year)
+ECB_supp <- ECB %>%
+  transmute(
+    date,
+    better_exp = `Better`,   # % expecting better business conditions
+    same_exp   = Same,           # % expecting same
+    worse_exp  = `Worse`,    # % expecting worse
+    dk_exp     = `DK; NA`,
+    rel_exp    = Relative,
+    net_biz_expect = better_exp - worse_exp  # net % expecting improvement
+  )
+
+head(ECB_supp)
+
+ECB_long <- ECB_supp %>%
+  select(date, better_exp, same_exp, worse_exp) %>%
+  pivot_longer(
+    cols = -date,
+    names_to  = "expectation",
+    values_to = "share"
+  )
+
+ggplot(ECB_long, aes(x = date, y = share, fill = expectation)) +
+  geom_area(alpha = 0.8) +
+  scale_fill_manual(
+    values = c(
+      better_exp = "darkgreen",
+      same_exp   = "grey70",
+      worse_exp  = "firebrick"
+    ),
+    labels = c("Better", "Same", "Worse")
+  ) +
+  labs(
+    title = "Expected business conditions over the next year",
+    x     = "Date",
+    y     = "Percent of respondents",
+    fill  = NULL
+  ) +
+  theme_minimal()
+
+plot_cs_vs_exp_biz_dual <- function(data_macro, data_ecb,
+                                    cs_limits  = c(40, 120),
+                                    net_limits = c(-90, 30)) {
+  df <- data_macro %>%
+    select(date, cs) %>%
+    left_join(data_ecb %>% select(date, net_biz_expect), by = "date") %>%
+    filter(!is.na(cs), !is.na(net_biz_expect)) %>%
+    arrange(date)
+  
+  cs_min <- cs_limits[1]
+  cs_max <- cs_limits[2]
+  nb_min <- net_limits[1]
+  nb_max <- net_limits[2]
+  
+  cs_rng <- cs_max - cs_min
+  nb_rng <- nb_max - nb_min
+  
+  df <- df %>%
+    mutate(
+      net_biz_scaled = cs_min + (net_biz_expect - nb_min) * (cs_rng / nb_rng)
+    )
+  
+  ggplot(df, aes(x = date)) +
+    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
+    geom_line(aes(y = net_biz_scaled,
+                  color = "Net expected business conditions (Better-Worse)")) +
+    scale_y_continuous(
+      name   = "Consumer Sentiment Index",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- cs_min) * (nb_rng / cs_rng) + nb_min,
+        name  = "Net % expecting better minus worse business conditions"
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("steelblue", "darkorange"),
+        c("Consumer Sentiment", "Net expected business conditions (Better-Worse)")
+      )
+    ) +
+    labs(
+      title = "Consumer sentiment vs. expected business conditions in a year",
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+# Example call
+p_exp_biz <- plot_cs_vs_exp_biz_dual(macro, ECB_supp,
+                                     cs_limits  = c(40, 120),
+                                     net_limits = c(-90, 30))
+p_exp_biz
+```
+
+
+
+## Figure 3. Scatter: net expectations vs subsequent unemployment change
 ```{r}
 #| echo: false
 #| warning: false
@@ -668,7 +672,7 @@ ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
 ```
 
 
-## Figure 3. Time series: net expectations vs actual unemployment (dual axis)
+## Figure 4. Time series: net expectations vs actual unemployment (dual axis)
 ```{r}
 plot_expect_vs_unemp_dual <- function(data_macro2,
                                       cs_limits   = c(-60, 60),   # for net expectations
@@ -717,10 +721,7 @@ plot_expect_vs_unemp_dual <- function(data_macro2,
     theme(legend.position = "bottom")
 }
 
-p_expect_unemp <- plot_expect_vs_unemp_dual(macro2,
-                                            cs_limits    = c(-60, 60),
-                                            unemp_limits = c(2, 12))
-p_expect_unemp
+plot_expect_vs_unemp_dual(macro2)
 ```
 
  
@@ -734,7 +735,7 @@ p_expect_unemp
 
 # Conclusion & Outlook
 
-|   The COVID-19 pandemic intensified pre-existing challenges in the U.S. housing system, with eviction practices in Williamsburg and James City County illustrating how policies and socio-economic factors shape housing stability(Oliver 2020; Trivette 2021). This research examined shifts in eviction rates, legal outcomes, and financial burdens on tenants and landlords before and during the pandemic. Increases in case dismissals and non-suits, alongside decreased plaintiff victories, suggest that pandemic-era tenant protections had an impact. Additionally, the rise in principal amounts over time may reflect extended case durations due to the processing time of the Rent Relief Program, though further investigation is needed to confirm this correlation.
+| 
 
 \newpage 
 
