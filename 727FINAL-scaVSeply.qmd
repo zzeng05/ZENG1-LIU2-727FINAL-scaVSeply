@@ -554,107 +554,8 @@ ggplot(df, aes(x = date)) +
 
 \newpage 
 
-## Figure 2.Time series: net business conditions vs consumer sentiment
-```{r}
-# From ECB (Table 26: Expected change in business conditions in a year)
-ECB_supp <- ECB %>%
-  transmute(
-    date,
-    better_exp = `Better`,   # % expecting better business conditions
-    same_exp   = Same,           # % expecting same
-    worse_exp  = `Worse`,    # % expecting worse
-    dk_exp     = `DK; NA`,
-    rel_exp    = Relative,
-    net_biz_expect = better_exp - worse_exp  # net % expecting improvement
-  )
 
-head(ECB_supp)
-
-ECB_long <- ECB_supp %>%
-  select(date, better_exp, same_exp, worse_exp) %>%
-  pivot_longer(
-    cols = -date,
-    names_to  = "expectation",
-    values_to = "share"
-  )
-
-ggplot(ECB_long, aes(x = date, y = share, fill = expectation)) +
-  geom_area(alpha = 0.8) +
-  scale_fill_manual(
-    values = c(
-      better_exp = "darkgreen",
-      same_exp   = "grey70",
-      worse_exp  = "firebrick"
-    ),
-    labels = c("Better", "Same", "Worse")
-  ) +
-  labs(
-    title = "Expected business conditions over the next year",
-    x     = "Date",
-    y     = "Percent of respondents",
-    fill  = NULL
-  ) +
-  theme_minimal()
-
-plot_cs_vs_exp_biz_dual <- function(data_macro, data_ecb,
-                                    cs_limits  = c(40, 120),
-                                    net_limits = c(-90, 30)) {
-  df <- data_macro %>%
-    select(date, cs) %>%
-    left_join(data_ecb %>% select(date, net_biz_expect), by = "date") %>%
-    filter(!is.na(cs), !is.na(net_biz_expect)) %>%
-    arrange(date)
-  
-  cs_min <- cs_limits[1]
-  cs_max <- cs_limits[2]
-  nb_min <- net_limits[1]
-  nb_max <- net_limits[2]
-  
-  cs_rng <- cs_max - cs_min
-  nb_rng <- nb_max - nb_min
-  
-  df <- df %>%
-    mutate(
-      net_biz_scaled = cs_min + (net_biz_expect - nb_min) * (cs_rng / nb_rng)
-    )
-  
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
-    geom_line(aes(y = net_biz_scaled,
-                  color = "Net expected business conditions (Better-Worse)")) +
-    scale_y_continuous(
-      name   = "Consumer Sentiment Index",
-      limits = cs_limits,
-      sec.axis = sec_axis(
-        trans = ~ (.- cs_min) * (nb_rng / cs_rng) + nb_min,
-        name  = "Net % expecting better minus worse business conditions"
-      )
-    ) +
-    scale_color_manual(
-      values = setNames(
-        c("steelblue", "darkorange"),
-        c("Consumer Sentiment", "Net expected business conditions (Better-Worse)")
-      )
-    ) +
-    labs(
-      title = "Consumer sentiment vs. expected business conditions in a year",
-      x     = "Date",
-      color = NULL
-    ) +
-    theme_minimal() +
-    theme(legend.position = "bottom")
-}
-
-# Example call
-p_exp_biz <- plot_cs_vs_exp_biz_dual(macro, ECB_supp,
-                                     cs_limits  = c(40, 120),
-                                     net_limits = c(-90, 30))
-p_exp_biz
-```
-
-
-
-## Figure 3. Scatter: net expectations vs subsequent unemployment change
+## Figure 2. Scatter: net expectations vs subsequent unemployment change
 ```{r}
 #| echo: false
 #| warning: false
@@ -679,7 +580,7 @@ ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
 ```
 
 
-## Figure 4. Time series: net expectations vs actual unemployment (dual axis)
+## Figure 3. Time series: net expectations vs actual unemployment (dual axis)
 ```{r}
 plot_expect_vs_unemp_dual <- function(data_macro2,
                                       cs_limits   = c(-60, 60),   # for net expectations
