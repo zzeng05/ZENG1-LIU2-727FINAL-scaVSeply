@@ -18,22 +18,22 @@ format:
 \renewcommand{\footrulewidth}{0.382pt}
 \begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
 
-\begin{center} {\Large A Fancy metaphor title: Explain what to explore\par} \end{center}
+\begin{center} {\Large Consumer Sentiments VS. Economy Realities: Longitudinal Analysis of Changing Consumer Perceptions 
+in Relation to Employment\par} \end{center}
 \begin{center} {Novembver 2025} \end{center}
 
 # Socio-Economic Background
-
-|   Williamsburg, Virginia, known for its historical significance and educational institutions, presents a paradox within its socio-economic landscape. Despite a reputation as a peaceful, tourist-driven city, Williamsburg struggles with a significant housing crisis that reflects broader socio-economic challenges. A low poverty rate is offset by a high housing burden, where a substantial portion of residents—especially those working in essential local industries—face steep costs to maintain stable housing. Tourism and education drive the city’s economy, yet many workers cannot afford to live within city limits, as high property values and rents cater more to short-term tourist needs than to long-term residents (Trivette 2021).
 | 
+
 \newpage
 
 \begin{center} {\large \textbf{Exploratory Data Analysis Executive Summary}\par} \end{center}
 
-- **Project Objective**: 
-- **Data Source**: 
-- **Data Reliability**:
-- **THEME FOUND123**: 
-- **Limitations of the Analysis**: 
+- **Project Objective** 
+- **Data Source** 
+- **Data Reliability**
+- **THEME FOUND123**
+- **Limitations of the Analysis**
 \newpage
 
 # Research Questions
@@ -54,13 +54,13 @@ format:
 ***Finding 1.***
 Finding Theme
 
-State the finding in a few lines (See Figure 1 and Table 1).
+State the finding in a few lines (See Figure 1).
 
 ***Finding 2.***
- (See Figure 2 and Table 2).
+ (See Figure 2).
 
 ***Finding 3.***
-(See Figure 3 and Table 3).
+(See Figure 3).
 \ 
 
 # Limitations
@@ -70,7 +70,7 @@ State the finding in a few lines (See Figure 1 and Table 1).
 
 # Visualizations
 
-- Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
+Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
 
 ```{r setup}
 #| warning: false
@@ -144,28 +144,6 @@ head(CS)
 ```
 
 ```{r}
-#fetch & clean table26: Expected change in business condition in a year
-ECB <- get_sca_table(26) %>%
-  { setNames(., as.character(unlist(.[1, ]))) } %>%
-  slice(-1) %>%
-  mutate(
-    Month       = as.integer(Month),
-    Year        = as.integer(Year),
-    `Better`= as.numeric(`Better`),
-    Same        = as.numeric(Same),
-    `Worse` = as.numeric(`Worse`),
-    `DK; NA`    = as.numeric(`DK; NA`),
-    Relative    = as.numeric(Relative),
-    date        = as.Date(sprintf("%04d-%02d-01", Year, Month))
-  ) %>%
-  relocate(date)
-
-head(ECB)
-```
-
-
-
-```{r}
 #fetch & clean table30: Expected Change in Unemployment During the Next Year
 UNEPLY1 <- get_sca_table(30) %>%
   { setNames(., as.character(unlist(.[1, ]))) } %>%
@@ -209,11 +187,11 @@ UNEPLY_long <- UNEPLY_supp %>%
   )
 
 ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
-  geom_area(alpha = 0.8) +
+  geom_area(alpha = 0.618) +
   scale_fill_manual(
     values = c(
       less_unemp = "darkgreen",
-      same_unemp = "grey70",
+      same_unemp = "grey",
       more_unemp = "firebrick"
     ),
     labels = c("Less unemployment", "Same", "More unemployment")
@@ -261,7 +239,7 @@ series_tbl <- bls_list$Results$series
 
 bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
   series_id <- series_tbl$seriesID[i]
-  dat       <- series_tbl$data[[i]]   # this is a data.frame for that series
+  dat       <- series_tbl$data[[i]]   #data.frame for the series
   
   as_tibble(dat) %>%
     transmute(
