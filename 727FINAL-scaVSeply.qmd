@@ -1,5 +1,5 @@
 ---
-author: "Zupeng Zeng & Troy Liu"
+author: "Zupeng Zeng & Troy (Shengkun) Liu"
 format: 
   pdf:
     include-in-header:
@@ -67,9 +67,6 @@ State the finding in a few lines (See Figure 1 and Table 1).
 
 ***Finding 3.***
 (See Figure 3 and Table 3).
-
-***Finding 4.***
-(See Figure 4 and Table 4).
 \ 
 
 # Limitations
@@ -171,6 +168,102 @@ head(BZC)
 ```
 
 ```{r}
+# From your BZC
+BZC_supp <- BZC %>%
+  transmute(
+    date,
+    better_now = `Better Now`,
+    same_now   = Same,
+    worse_now  = `Worse Now`,
+    dk_now     = `DK; NA`,
+    net_biz    = better_now - worse_now  # >0: net positive view of business conditions
+  )
+
+head(BZC_supp)
+
+BZC_long <- BZC_supp %>%
+  select(date, better_now, same_now, worse_now) %>%
+  pivot_longer(
+    cols = -date,
+    names_to  = "response",
+    values_to = "share"
+  )
+
+ggplot(BZC_long, aes(x = date, y = share, fill = response)) +
+  geom_area(alpha = 0.8) +
+  scale_fill_manual(
+    values = c(
+      better_now = "darkgreen",
+      same_now   = "grey70",
+      worse_now  = "firebrick"
+    ),
+    labels = c("Better Now", "Same", "Worse Now")
+  ) +
+  labs(
+    title = "Current Business Conditions Compared with a Year Ago",
+    x     = "Date",
+    y     = "Percent of respondents",
+    fill  = NULL
+  ) +
+  theme_minimal()
+
+plot_cs_vs_netbiz_dual <- function(data_macro, data_bzc,
+                                   cs_limits  = c(40, 120),
+                                   net_limits = c(-90, 30)) {
+  df <- data_macro %>%
+    select(date, cs) %>%
+    left_join(data_bzc %>% select(date, net_biz), by = "date") %>%
+    filter(!is.na(cs), !is.na(net_biz)) %>%
+    arrange(date)
+  
+  cs_min  <- cs_limits[1]
+  cs_max  <- cs_limits[2]
+  nb_min  <- net_limits[1]
+  nb_max  <- net_limits[2]
+  cs_rng  <- cs_max - cs_min
+  nb_rng  <- nb_max - nb_min
+  
+  df <- df %>%
+    mutate(
+      net_biz_scaled = cs_min + (net_biz - nb_min) * (cs_rng / nb_rng)
+    )
+  
+  ggplot(df, aes(x = date)) +
+    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
+    geom_line(aes(y = net_biz_scaled, color = "Net business conditions (Better-Worse)")) +
+    scale_y_continuous(
+      name   = "Consumer Sentiment Index",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- cs_min) * (nb_rng / cs_rng) + nb_min,
+        name  = "Net % saying business conditions are better minus worse"
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("steelblue", "darkorange"),
+        c("Consumer Sentiment", "Net business conditions (Better-Worse)")
+      )
+    ) +
+    labs(
+      title = "Headline sentiment vs. net views of business conditions",
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+p_netbiz <- plot_cs_vs_netbiz_dual(macro, BZC_supp,
+                                   cs_limits  = c(40, 120),
+                                   net_limits = c(-90, 30))
+
+p_netbiz
+```
+
+
+
+```{r}
 #fetch & clean table30: Expected Change in Unemployment During the Next Year
 UNEPLY1 <- get_sca_table(30) %>%
   { setNames(., as.character(unlist(.[1, ]))) } %>%
@@ -189,6 +282,49 @@ UNEPLY1 <- get_sca_table(30) %>%
   relocate(date)
 
 head(UNEPLY1)
+```
+
+```{r}
+UNEPLY_supp <- UNEPLY1 %>%
+  transmute(
+    date,
+    less_unemp  = Less,
+    same_unemp  = Same,
+    more_unemp  = More,
+    dk_unemp    = `DK; NA`,
+    rel_unemp   = Relative,
+    net_unemp_expect = less_unemp - more_unemp
+  )
+
+head(UNEPLY_supp)
+
+UNEPLY_long <- UNEPLY_supp %>%
+  select(date, less_unemp, same_unemp, more_unemp) %>%
+  pivot_longer(
+    cols = -date,
+    names_to  = "expectation",
+    values_to = "share"
+  )
+
+ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
+  geom_area(alpha = 0.8) +
+  scale_fill_manual(
+    values = c(
+      less_unemp = "darkgreen",
+      same_unemp = "grey70",
+      more_unemp = "firebrick"
+    ),
+    labels = c("Less unemployment", "Same", "More unemployment")
+  ) +
+  labs(
+    title = "Expected change in unemployment over the next year",
+    x     = "Date",
+    y     = "Percent of respondents",
+    fill  = NULL
+  ) +
+  theme_minimal()
+
+
 ```
 
 
@@ -266,12 +402,7 @@ head(UNEPLOY_R)
 head(Job_V)
 ```
 
-
-
-
-
-
-## Figure 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate
+## Figure 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
 ```{r}
 #| echo: false
 #| warning: false
@@ -408,165 +539,191 @@ cs_vs_jobs <- function(data,
 
 cs_vs_jobs(macro, lag_months = 3)
 ```
-
-
-
-
-
-## Table 1.
 ```{r}
-#| echo: false
-#| warning: false
-# Table of Principal Amounts Summary Statistics
-principal_summary <- combined_data %>%
-  group_by(Period) %>%
-  summarise(
-    Min = min(Principal.Amount, na.rm = TRUE),
-    Median = median(Principal.Amount, na.rm = TRUE),
-    Mean = mean(Principal.Amount, na.rm = TRUE),
-    Max = max(Principal.Amount, na.rm = TRUE)
+## Main dual-axis plot: CS vs future job creation
+## with unemployment extremes overlaid (no separate y-axis)
+
+lag_months  <- 3                   # choose 3, 6, or 12
+cs_limits   <- c(40, 120)          # left axis (CS)
+jobs_limits <- c(-1000, 1000)      # right axis (job change, thousands)
+unemp_limits <- c(2, 12)           # used only for scaling unemployment vertically
+
+df <- macro %>%
+  arrange(date) %>%
+  mutate(
+    jobchg_lead = lead(job_change, lag_months),
+    unrate_lead = lead(unrate,      lag_months)
   ) %>%
-  arrange(Period)
+  filter(!is.na(cs), !is.na(jobchg_lead), !is.na(unrate_lead))
 
-#Make the table
-principal_summary %>%
-  kable("latex", booktabs = TRUE, caption = "Summary Statistics for Principal Amounts (USD)") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(1, bold = TRUE, color = "black")
-```
-- The data indicates a clear increase in principal amounts over time, possibly due to multiple continuances in 2022 as Rent Relief Program (RRP) claims were processed, leading to accumulated amounts owed in each Unlawful Detainer case.
-\newpage 
+# unpack limits
+cs_min   <- cs_limits[1];  cs_max <- cs_limits[2]
+jb_min   <- jobs_limits[1]; jb_max <- jobs_limits[2]
+ur_min   <- unemp_limits[1]; ur_max <- unemp_limits[2]
 
-## Figure 2. Comparison of Attorney Representation Rates
-```{r}
-#| echo: false
-#| warning: false
-# Categorizing attorney presence
-combined_data <- combined_data %>%
-  mutate(AttorneyStatus = case_when(
-    Attorney %in% c("NONE", "Information Unavailable", NA, "0") ~ "Without Attorney",
-    TRUE ~ "With Attorney"
-  ))
+cs_range <- cs_max - cs_min
+jb_range <- jb_max - jb_min
+ur_range <- ur_max - ur_min
 
-# Grouping and calculating percentages
-attorney_representation <- combined_data %>%
-  group_by(Period, AttorneyStatus) %>%
-  summarise(Cases = n(), .groups = 'drop') %>%
-  group_by(Period) %>%
-  mutate(Percentage = Cases / sum(Cases) * 100)
+# scale job change & unemployment into CS vertical space for plotting
+df <- df %>%
+  mutate(
+    jobchg_scaled = cs_min + (jobchg_lead - jb_min) * (cs_range / jb_range),
+    unrate_scaled = cs_min + (unrate_lead - ur_min) * (cs_range / ur_range)
+  )
 
-# Plotting pie chart with labels in the center of each segment
-ggplot(attorney_representation, aes(x = "", y = Percentage, fill = AttorneyStatus)) +
-  geom_bar(stat = "identity", width = 1) +
-  coord_polar(theta = "y") +  # Convert bar to pie chart
-  facet_wrap(~ Period, scales = "free_x", as.table = FALSE) +
-  theme_void() +
-  labs(title = "Attorney Representation Rates Pre- and Post-COVID", fill = NULL) +  # Set legend title to NULL
-  scale_fill_manual(values = c("With Attorney" = "blue", "Without Attorney" = "darkred")) +
-  theme(legend.position = "bottom") +
-  geom_text(aes(label = paste0(round(Percentage, 0), "%")), 
-            position = position_stack(vjust = 0.5), color = "white", size = 4)
-```
+# pick a few extreme unemployment values (e.g., 3 highest & 3 lowest)
+top3 <- df %>% slice_max(order_by = unrate_lead, n = 3)
+bottom3 <- df %>% slice_min(order_by = unrate_lead, n = 3)
 
-## Table 2.
-```{r}
-#| echo: false
-#| warning: false
-# Prepare the data for the table
-attorney_representation_table <- combined_data %>%
-  group_by(Period, AttorneyStatus) %>%
-  summarise(Cases = n(), .groups = 'drop') %>%
-  group_by(Period) %>%
-  mutate(Percentage = Cases / sum(Cases) * 100) %>%
-  ungroup() %>%
-  arrange(Period, AttorneyStatus)
+unemp_extremes <- bind_rows(top3, bottom3) %>%
+  arrange(date) %>%
+  distinct(date, .keep_all = TRUE)
 
-# Displaying the table
-attorney_representation_table %>%
-  kable("latex", booktabs = TRUE, caption = "Attorney Representation Statistics") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(1, bold = TRUE, color = "black") %>%
-  column_spec(3, width = "6em")
-```
-- The data suggests a decreased access to legal support for tenants in the post-COVID period, which may have implications for the fairness and outcomes of eviction proceedings.
-\newpage 
+# legend labels
+cs_label    <- "Consumer Sentiment"
+job_label   <- paste0("Job change (t + ", lag_months, "m)")
+unemp_label <- "Unemployment (no axis)"
 
-## Figure 3. Judgment Outcome Distribution Stacked
-![](Part2.png)
-
-## Table 3.
-```{r}
-#| echo: false
-#| warning: false
-# Prepare data with counts and percentages
-judgment_stats <- combined_data %>%
-  group_by(Period, Judgement) %>%
-  summarise(Count = n(), .groups = 'drop') %>%
-  group_by(Period) %>%
-  mutate(Percentage = round(100 * Count / sum(Count), 2)) %>%
-  ungroup() %>%
-  arrange(Period)
-
-# Display the Table with counts and percentages
-judgment_stats %>%
-  kable("latex", booktabs = TRUE, caption = "Judgment Outcomes Statistics", col.names = c("Period", "Judgement", "Count", "Percentage (%)")) %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(1, bold = TRUE, color = "black")
-```
- - In 2022, an increase in case dismissals and non-suits—often indicating tenant non-liability or landlords’ reduced grounds for eviction due to rent payments or insufficient proof—correlates with a decline in plaintiff (landlord) victories, suggesting a potential positive impact of the Rent Relief Program (RRP) implemented during the pandemic.
- 
-\newpage 
-
-## Figure 4. Case Time Length Distribution Density
-```{r}
-#| echo: false
-#| warning: false
-# Calculate Case Time Length for pre and post data
-pre$Case.Time.Length <- as.Date(as.character(pre$Hearing.Date), format="%m/%d/%Y") -
-                        as.Date(as.character(pre$Filed.Date), format="%m/%d/%Y")
-post$Case.Time.Length <- as.Date(as.character(post$date), format="%m/%d/%Y") -
-                         as.Date(as.character(post$filed.date), format="%m/%d/%Y")
-
-# Combine the pre and post data
-combined_data <- bind_rows(
-  mutate(pre, Period = "Pre-COVID"),
-  mutate(post, Period = "Post-COVID")
-)
-
-# Visualize Case Time Length Distribution
-ggplot(combined_data, aes(x = Case.Time.Length, fill = Period)) +
-  geom_density(alpha = 0.5) +
-  labs(title = "Case Time Length Distribution Pre- and Post- COVID",
-       x = "Case Time Length (Day)", y = "Density") +
-  scale_fill_brewer(palette = "Set2") +
+ggplot(df, aes(x = date)) +
+  # main series: Consumer Sentiment (left axis)
+  geom_line(aes(y = cs, color = cs_label), linewidth = 0.7) +
+  
+  # main series: job creation (right axis, scaled onto CS scale)
+  geom_line(aes(y = jobchg_scaled, color = job_label),
+            linewidth = 0.7) +
+  
+  # overlay unemployment (same lag), no axis – dashed grey line
+  geom_line(aes(y = unrate_scaled, color = unemp_label),
+            linewidth = 0.4, alpha = 0.5, linetype = "dashed") +
+  
+  # label only extreme high/low unemployment months
+  geom_point(
+    data = unemp_extremes,
+    aes(y = unrate_scaled),
+    color = "black", size = 1.8
+  ) +
+  geom_text(
+    data = unemp_extremes,
+    aes(y = unrate_scaled,
+        label = sprintf("%.1f%%", unrate_lead)),
+    vjust = -0.4,
+    size  = 3,
+    color = "black"
+  ) +
+  
+  # dual y-axes: left = CS, right = job change
+  scale_y_continuous(
+    name   = "Consumer Sentiment Index",
+    limits = cs_limits,
+    sec.axis = sec_axis(
+      trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
+      name  = paste0("Monthly change in nonfarm employment (thousands), t + ",
+                     lag_months, " months")
+    )
+  ) +
+  scale_color_manual(
+    values = setNames(
+      c("steelblue", "darkgreen", "grey50"),
+      c(cs_label, job_label, unemp_label)
+    )
+  ) +
+  labs(
+    title = paste0("Consumer Sentiment vs Future Job Creation (", lag_months, "-month lead)"),
+    subtitle = "Unemployment rate at the same horizon is shown as a dashed line; extremes are labeled",
+    x = "Date",
+    color = NULL
+  ) +
   theme_minimal() +
-  theme(legend.title = element_blank(), panel.grid = element_blank())
+  theme(
+    legend.position = "bottom"
+  )
 ```
 
-## Table 4.
+
+\newpage 
+
+## Figure 2. Scatter: net expectations vs subsequent unemployment change
 ```{r}
 #| echo: false
 #| warning: false
-# Calculate summary statistics for Case Time Length
-case_time_stats <- combined_data %>%
-  group_by(Period) %>%
-  summarise(
-    Min = min(Case.Time.Length, na.rm = TRUE),
-    Median = median(Case.Time.Length, na.rm = TRUE),
-    Mean = mean(Case.Time.Length, na.rm = TRUE),
-    Max = max(Case.Time.Length, na.rm = TRUE),
-    .groups = 'drop'
-  ) %>%
-  arrange(desc(Period))
+macro2 <- macro %>%
+  left_join(UNEPLY_supp, by = "date") %>%
+  arrange(date) %>%
+  mutate(
+    unrate_3m_delta = lead(unrate, 3) - unrate
+  )
+df_scatter <- macro2 %>%
+  filter(!is.na(net_unemp_expect), !is.na(unrate_3m_delta))
 
-# Render table
-case_time_stats %>%
-  kable("latex", booktabs = TRUE, caption = "Summary Statistics for Case Time Length") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(1, bold = TRUE, color = "black")
+ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Net unemployment expectations vs. 3-month change in actual unemployment",
+    x     = "Net % expecting less minus more unemployment (t)",
+    y     = "Change in unemployment over the next 3 months (percentage points)"
+  ) +
+  theme_minimal()
 ```
- - The time length exhibits a trend parallel to the principal amount distribution, revealing a higher number of cases with substantial principal amounts and extended case duration. This pattern highlights the potential correlation between larger debts and longer case duration. To further validate our hypothesis, it is necessary to examine whether cases with high principal amounts correspond to those with extended continuance duration.
 
+
+## Figure 3. Time series: net expectations vs actual unemployment (dual axis)
+```{r}
+plot_expect_vs_unemp_dual <- function(data_macro2,
+                                      cs_limits   = c(-60, 60),   # for net expectations
+                                      unemp_limits= c(2, 12)) {
+  
+  df <- data_macro2 %>%
+    filter(!is.na(net_unemp_expect), !is.na(unrate)) %>%
+    arrange(date)
+  
+  ex_min <- cs_limits[1]
+  ex_max <- cs_limits[2]
+  ur_min <- unemp_limits[1]
+  ur_max <- unemp_limits[2]
+  
+  ex_rng <- ex_max - ex_min
+  ur_rng <- ur_max - ur_min
+  
+  df <- df %>%
+    mutate(
+      unrate_scaled = ex_min + (unrate - ur_min) * (ex_rng / ur_rng)
+    )
+  
+  ggplot(df, aes(x = date)) +
+    geom_line(aes(y = net_unemp_expect, color = "Net expectations (Less-More)")) +
+    geom_line(aes(y = unrate_scaled,    color = "Unemployment rate")) +
+    scale_y_continuous(
+      name   = "Net % expecting less minus more unemployment",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
+        name  = "Unemployment rate (%)"
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("darkgreen", "firebrick"),
+        c("Net expectations (Less-More)", "Unemployment rate")
+      )
+    ) +
+    labs(
+      title = "Net expectations about unemployment vs actual unemployment",
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+p_expect_unemp <- plot_expect_vs_unemp_dual(macro2,
+                                            cs_limits    = c(-60, 60),
+                                            unemp_limits = c(2, 12))
+p_expect_unemp
+```
+
+ 
 \newpage 
 
 # Indications
@@ -582,7 +739,9 @@ case_time_stats %>%
 \newpage 
 
 # References
-
+https://data.sca.isr.umich.edu/data-archive/mine.php
+https://www.bls.gov/cps
+https://www.bls.gov/ces
 
 
 
