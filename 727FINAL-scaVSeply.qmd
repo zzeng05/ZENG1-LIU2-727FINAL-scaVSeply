@@ -300,8 +300,8 @@ head(macro)
 ```
 
 ```{r}
-#| echo: false
 #| warning: false
+#| message: false
 # Function to plot Consumer Sentiment vs Unemployment Rate with dual y-axes
 cs_vs_unemp <- function(data,
                                   lag_months   = 3,
@@ -365,10 +365,85 @@ cs_vs_unemp (macro, lag_months = 5)
 cs_vs_unemp (macro, lag_months = 7)
 cs_vs_unemp (macro, lag_months = 8)
 ```
+```{r}
+#| warning: false
+#| message: false
+cs_vs_unemp <- function(data,
+                        lag_months   = 3,
+                        cs_limits    = c(30, 120),   # left y-axis
+                        unemp_limits = c(0, 15)) {   # right y-axis
+  
+  df <- data %>%
+    arrange(date) %>%
+    mutate(unrate_lead = lead(unrate, lag_months)) %>%
+    filter(!is.na(cs), !is.na(unrate_lead))
+  
+  # unpack limits
+  cs_min   <- cs_limits[1]
+  cs_max   <- cs_limits[2]
+  ur_min   <- unemp_limits[1]
+  ur_max   <- unemp_limits[2]
+  
+  cs_range <- cs_max - cs_min
+  ur_range <- ur_max - ur_min
+  
+  # scale unemployment into CS scale for plotting
+  df <- df %>%
+    mutate(
+      unrate_scaled = cs_min + (unrate_lead - ur_min) * (cs_range / ur_range)
+    )
+  
+  # dynamic label for the legend
+  unemp_label <- paste0("Unemp (t + ", lag_months, "m)")
+  
+  ggplot(df, aes(x = date)) +
+    # raw lines (lighter)
+    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.4) +
+    geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.4) +
+    
+    # smoothed lines (highlighted)
+    geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    geom_smooth(aes(y = unrate_scaled, color = unemp_label),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    
+    scale_y_continuous(
+      name   = "Consumer Sentiment Index",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- cs_min) * (ur_range / cs_range) + ur_min,
+        name  = paste0("Unemployment rate at t + ", lag_months, " months")
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("darkblue", "firebrick"),
+        c("Consumer Sentiment", unemp_label)
+      )
+    ) +
+    labs(
+      title = paste0("Consumer Sentiment vs Future Unemployment (", lag_months, "-month lead)"),
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    )
+}
+
+cs_vs_unemp (macro, lag_months = 0)
+cs_vs_unemp (macro, lag_months = 6)
+cs_vs_unemp (macro, lag_months = 5)
+cs_vs_unemp (macro, lag_months = 7)
+cs_vs_unemp (macro, lag_months = 8)
+```
+
+
 
 ```{r}
-#| echo: false
 #| warning: false
+#| message: false
 # function to plot Consumer Sentiment vs Job Change with dual y-axes
 cs_vs_jobs <- function(data,
                                  lag_months  = 3,
@@ -430,40 +505,174 @@ cs_vs_jobs(macro, lag_months =5)
 cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
+```{r}
+#| warning: false
+#| message: false
+# function to plot Consumer Sentiment vs Job Change with dual y-axes + smoothing
+cs_vs_jobs <- function(data,
+                       lag_months  = 3,
+                       cs_limits   = c(40, 120),   # left y-axis
+                       jobs_limits = c(-1500, 1500)) { # right y-axis (thousands)
+  
+  df <- data %>%
+    arrange(date) %>%
+    mutate(jobchg_lead = lead(job_change, lag_months)) %>%
+    filter(!is.na(cs), !is.na(jobchg_lead))
+  
+  cs_min   <- cs_limits[1]
+  cs_max   <- cs_limits[2]
+  jb_min   <- jobs_limits[1]
+  jb_max   <- jobs_limits[2]
+  
+  cs_range <- cs_max - cs_min
+  jb_range <- jb_max - jb_min
+  
+  df <- df %>%
+    mutate(
+      jobchg_scaled = cs_min + (jobchg_lead - jb_min) * (cs_range / jb_range)
+    )
+  
+  jobs_label <- paste0("Job change (t + ", lag_months, "m)")
+  
+  ggplot(df, aes(x = date)) +
+    # raw lines (lighter)
+    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.4) +
+    geom_line(aes(y = jobchg_scaled, color = jobs_label), alpha = 0.4) +
+    
+    # smoothed lines (highlighted)
+    geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    geom_smooth(aes(y = jobchg_scaled, color = jobs_label),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    
+    scale_y_continuous(
+      name   = "Consumer Sentiment Index",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
+        name  = paste0("Added Job (thousands) at t + ",
+                       lag_months, " months")
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("darkblue", "darkgreen"),
+        c("Consumer Sentiment", jobs_label)
+      )
+    ) +
+    labs(
+      title = paste0("Consumer Sentiment vs Added Jobs (", lag_months, "-month lead)"),
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "bottom"
+    )
+}
+
+cs_vs_jobs(macro, lag_months =0)
+cs_vs_jobs(macro, lag_months =6)
+cs_vs_jobs(macro, lag_months =5)
+cs_vs_jobs(macro, lag_months =7)
+cs_vs_jobs(macro, lag_months =8)
+```
+
 
 \newpage
 
 ## Visualization 2. Scatter: net expectations vs subsequent unemployment change
 
 ```{r}
-#| echo: false
 #| warning: false
+#| message: false
 macro2 <- macro %>%
   left_join(UNEPLY_supp, by = "date") %>%
-  arrange(date) %>%
-  mutate(
-    unrate_3m_delta = lead(unrate, 7) - unrate
-  )
-df_scatter <- macro2 %>%
-  filter(!is.na(net_unemp_expect), !is.na(unrate_3m_delta))
+  arrange(date)
 
-ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
-  geom_point(alpha = 0.382) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(
-    title = "Net unemployment expectations vs. 3-month change in actual unemployment",
-    x     = "Net % expecting less minus more unemployment",
-    y     = "Change in unemployment over the next 3 months"
-  ) +
-  theme_minimal()
+expect_vs_unemp_scatter <- function(data,
+                                    horizon_months = 3,
+                                    x_limits = c(-60, 60),
+                                    y_limits = c(-3, 3)) {
+  df <- data %>%
+    mutate(
+      unrate_delta = lead(unrate, horizon_months) - unrate
+    ) %>%
+    filter(!is.na(net_unemp_expect), !is.na(unrate_delta))
+  
+  # correlation and regression
+  cor_val <- cor(df$net_unemp_expect, df$unrate_delta)
+  
+  lm_fit  <- lm(unrate_delta ~ net_unemp_expect, data = df)
+  lm_sum  <- summary(lm_fit)
+  
+  slope   <- coef(lm_fit)[["net_unemp_expect"]]
+  r2      <- lm_sum$r.squared
+  
+  # print a brief statistical summary in the console
+  cat("\nHorizon:", horizon_months, "months\n")
+  cat("Correlation (net expectations, future Δunemp):",
+      round(cor_val, 3), "\n")
+  cat("Slope (OLS):", round(slope, 4),
+      "pp change in unemp per 1-pt net expectation\n")
+  cat("R-squared:", round(r2, 3), "\n\n")
+  
+  # scatter plot with tuned aesthetics
+  ggplot(df, aes(x = net_unemp_expect, y = unrate_delta)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+    geom_point(alpha = 0.382, size = 1.618) +
+    geom_smooth(method = "lm", se = FALSE, color = "firebrick", linewidth = 1) +
+    scale_x_continuous(
+      limits = x_limits,
+      breaks = seq(x_limits[1], x_limits[2], by = 20)
+    ) +
+    scale_y_continuous(
+      limits = y_limits,
+      breaks = seq(y_limits[1], y_limits[2], by = 1)
+    ) +
+    labs(
+      title = paste0(
+        "Net unemployment expectations vs. ",
+        horizon_months, "-month change in unemployment"
+      ),
+      subtitle = paste0(
+        "Slope ≈ ", round(slope, 3),
+        " pp / 1-pt net expectation,  R² ≈ ", round(r2, 2)
+      ),
+      x = "Net % expecting less minus more unemployment (t)",
+      y = paste0("Change in unemployment over next ",
+                 horizon_months, " months (percentage points)")
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title.position = "plot",
+      legend.position = "none"
+    )
+}
+
+# explore horizons from 1 to 12 months
+horizons <- 0:12
+
+plots_set <- vector("list", length(horizons))
+names(plots_set) <- paste0("h_", horizons, "m")
+
+for (i in seq_along(horizons)) {
+  plots_set[[i]] <- expect_vs_unemp_scatter(
+    macro2,horizons[i])
+}
+
+plots_set
 ```
 
 ## Visualization 3. Time series: net expectations vs actual unemployment (dual axis)
 
 ```{r}
+#| warning: false
+#| message: false
 expect_vs_unemp_dual <- function(data_macro2,
-                                      cs_limits   = c(-60, 60), # for net expectations
-                                      unemp_limits= c(2, 12)) {
+                                 cs_limits    = c(-60, 60),# for net expectations
+                                 unemp_limits = c(2, 12)) {# for unemployment
   
   df <- data_macro2 %>%
     filter(!is.na(net_unemp_expect), !is.na(unrate)) %>%
@@ -483,14 +692,28 @@ expect_vs_unemp_dual <- function(data_macro2,
     )
   
   ggplot(df, aes(x = date)) +
-    geom_line(aes(y = net_unemp_expect, color = "Net expectations (Less-More)")) +
-    geom_line(aes(y = unrate_scaled,    color = "Unemployment")) +
+    # raw lines (lighter)
+    geom_line(aes(y = net_unemp_expect,
+                  color = "Net expectations (Less-More)"),
+              alpha = 0.4) +
+    geom_line(aes(y = unrate_scaled,
+                  color = "Unemployment"),
+              alpha = 0.4) +
+    
+    # smoothed lines (highlighted)
+    geom_smooth(aes(y = net_unemp_expect,
+                    color = "Net expectations (Less-More)"),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    geom_smooth(aes(y = unrate_scaled,
+                    color = "Unemployment"),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    
     scale_y_continuous(
       name   = "Net (Less-More) unemployment expectations",
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = "Unemployment"
+        name  = "Unemployment rate (%)"
       )
     ) +
     scale_color_manual(
@@ -508,7 +731,88 @@ expect_vs_unemp_dual <- function(data_macro2,
     theme(legend.position = "bottom")
 }
 
+
 expect_vs_unemp_dual(macro2)
+```
+```{r}
+#| warning: false
+#| message: false
+expect_vs_unemp_dual <- function(data_macro2,
+                                 lag_months   = 3,
+                                 cs_limits    = c(-60, 60),  # for net expectations
+                                 unemp_limits = c(2, 12)) {  # for unemployment
+  
+  df <- data_macro2 %>%
+    arrange(date) %>%
+    mutate(unrate_lead = lead(unrate, lag_months)) %>%
+    filter(!is.na(net_unemp_expect), !is.na(unrate_lead))
+  
+  ex_min <- cs_limits[1]
+  ex_max <- cs_limits[2]
+  ur_min <- unemp_limits[1]
+  ur_max <- unemp_limits[2]
+  
+  ex_rng <- ex_max - ex_min
+  ur_rng <- ur_max - ur_min
+  
+  df <- df %>%
+    mutate(
+      unrate_scaled = ex_min + (unrate_lead - ur_min) * (ex_rng / ur_rng)
+    )
+  
+  unemp_label <- paste0("Unemployment (t + ", lag_months, "m)")
+  
+  ggplot(df, aes(x = date)) +
+    # raw lines (lighter)
+    geom_line(aes(y = net_unemp_expect,
+                  color = "Net expectations (Less-More)"),
+              alpha = 0.4) +
+    geom_line(aes(y = unrate_scaled,
+                  color = unemp_label),
+              alpha = 0.4) +
+    
+    # smoothed lines (highlighted)
+    geom_smooth(aes(y = net_unemp_expect,
+                    color = "Net expectations (Less-More)"),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    geom_smooth(aes(y = unrate_scaled,
+                    color = unemp_label),
+                se = FALSE, span = 0.2, linewidth = 0.9) +
+    
+    scale_y_continuous(
+      name   = "Net (Less-More) unemployment expectations",
+      limits = cs_limits,
+      sec.axis = sec_axis(
+        trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
+        name  = paste0("Unemployment rate (%) at t + ",
+                       lag_months, " months")
+      )
+    ) +
+    scale_color_manual(
+      values = setNames(
+        c("darkgreen", "firebrick"),
+        c("Net expectations (Less-More)", unemp_label)
+      )
+    ) +
+    labs(
+      title = paste0("Net Unemployment Expectations vs Future Unemployment (",
+                     lag_months, "-month lead)"),
+      x     = "Date",
+      color = NULL
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+}
+
+expect_vs_unemp_dual(macro2, lag_months = 3)
+expect_vs_unemp_dual(macro2, lag_months = 6)
+expect_vs_unemp_dual(macro2, lag_months = 5)
+expect_vs_unemp_dual(macro2, lag_months = 7)
+expect_vs_unemp_dual(macro2, lag_months = 8)
+expect_vs_unemp_dual(macro2, lag_months = 9)
+expect_vs_unemp_dual(macro2, lag_months = 10)
+expect_vs_unemp_dual(macro2, lag_months = 11)
+expect_vs_unemp_dual(macro2, lag_months = 12)
 ```
 
 \newpage
