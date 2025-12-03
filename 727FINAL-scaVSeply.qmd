@@ -25,39 +25,53 @@ format:
 \newpage
 
 # Socio-Economic Background
-| 
 
+|   Since the Global Financial Crisis, U.S. households have experienced two unusually severe labor-market downturns—the Great Recession of 2008–2009 and the COVID-19 recession in 2020—plus a long, uneven recovery in between. These shocks were accompanied by historically large swings in both objective indicators such as the unemployment rate and subjective indicators such as the University of Michigan Index of Consumer Sentiment. Understanding how quickly households anticipate or react to changes in employment conditions is important for policy-makers and forecasters: if survey-based expectations move in advance of labor-market data, they could serve as an early-warning signal of recessions or turning points. Our exploratory analysis focuses on the joint evolution of consumer sentiment, expectations about unemployment over the next year, and realized unemployment and payroll job growth since 2008, a period that covers both crises and the subsequent recovery phases.
 \newpage
 
 \begin{center} {\large \textbf{Exploratory Data Analysis Executive Summary}\par} \end{center}
 
--   **Project Objective**
--   **Data Source**
--   **Data Reliability**
--   **THEME FOUND123**
--   **Limitations of the Analysis** 
+-   **Project Objective**: To examine whether changes in consumer sentiment and unemployment expectations from the University of Michigan Survey of Consumers contain useful information about near-term labor-market outcomes. Specifically, we ask whether monthly shifts in sentiment and in “expected change in unemployment during the next year” are associated with subsequent changes in the unemployment rate and payroll employment 1–12 months ahead.
+-   **Data Source**: We combine three publicly available sources: (1) the Michigan Survey of Consumers tables for the Index of Consumer Sentiment (Table 1) and expected change in unemployment (Table 30), scraped directly from the Survey’s online data archive; (2) the BLS Current Population Survey (CPS) unemployment rate series (LNS14000000); and (3) the BLS Current Employment Statistics (CES) total nonfarm employment series (CES0000000001), from which we construct monthly job changes. All series are monthly and cover 2008–2025.
+-   **Data Reliability**: The sentiment and expectations measures are based on nationally representative survey samples but are subject to sampling variation and potential mode and nonresponse biases. The CPS unemployment rate and CES payroll employment are official federal statistics with well-documented methodology; they are widely used as benchmark measures of labor-market conditions. Taken together, these data provide a credible basis for descriptive, but not strictly causal, analysis.
+-   **Theme Emerged**: Across multiple visualizations, we find that broad consumer sentiment tracks major business-cycle events but is only weakly aligned with near-term movements in unemployment or job growth. In contrast, the more targeted question about expected unemployment changes shows a clear and increasingly strong negative relationship with realized changes in the unemployment rate 3–12 months ahead: when more people expect unemployment to rise, it does tend to rise later, although the explanatory power remains modest.
+-   **Limitations of the Analysis**: Our analysis is exploratory and descriptive. We focus on the post-2008 period and do not control for other macroeconomic drivers such as inflation, interest rates, or fiscal policy. Lead-lag correlations are computed on overlapping horizons, which complicates formal inference. We also treat survey measures as error-free, even though they contain sampling noise and potential measurement error. Finally, we do not estimate structural models, so we cannot claim that sentiment causes labor-market changes—only that the two move together in systematic ways.
 
 \newpage
 
 # Research Questions
 
--   
+-   Do monthly changes in the Index of Consumer Sentiment anticipate short-run changes in the unemployment rate and payroll employment, and if so, at what lead times?
 
--   
+-   Do qualitative expectations about unemployment have predictive content for subsequent changes in the unemployment rate, beyond what is captured by the aggregate sentiment index more directly?
 
 # Data Source and Assumptions
 
+|   Our primary predictors come from the University of Michigan Survey of Consumers. We programmatically request historical tables through the Survey’s web interface, using a small wrapper function to POST table numbers, years, and frequency parameters and then parse the resulting HTML tables. Table 1 provides the headline Index of Consumer Sentiment; Table 30 provides the distribution of responses about expected change in unemployment during the next year. From Table 30 we construct a “net unemployment expectation” measure equal to the percentage expecting less unemployment minus the percentage expecting more unemployment.
+
+|   Outcome variables come from the BLS API. We query the CPS unemployment rate (seasonally adjusted) and CES total nonfarm employment, both at monthly frequency from 2008 onward. We compute monthly job changes as first differences in employment. Throughout, we assume that the SCA and BLS time stamps are aligned to the same reference month and that seasonal adjustment and revisions have already been applied by the source agencies. We treat the post-2008 period as a single sample, implicitly assuming that survey questions and measurement practices are stable enough over time to allow pooling.
+
 # Data Cleaning Process
+|   For the SCA tables, we first standardize column names, drop repeated header rows, and coerce month/year fields to integers. We then create a calendar date variable set to the first day of each month and convert index and share variables to numeric form, handling the occasional “DK; NA” responses as missing. For the unemployment expectations table, we compute the net expectation series and reshape the component shares into long format for visualization.
+
+|   For the BLS data, we query multiple series IDs in a single API call and then unnest them into a long tibble with explicit series_id, year, period, and value columns. We keep only monthly records (M01–M12), derive numeric month values, and again construct a date variable. We then split the long table into a CPS unemployment-rate series and a CES employment series, calculating monthly job changes from the latter. Finally, we merge the SCA and BLS datasets by date, resulting in a panel where each row corresponds to a month with consumer sentiment, unemployment expectations, unemployment rate, and employment growth aligned.
 
 # Notable Findings
 
-***Finding 1.*** Finding Theme
+***Finding 1.***
+Consumer Sentiment co-moves with, but does not sharply lead, unemployment or job growth.
 
-State the finding in a few lines (See Visualization 1).
+Across a range of leads from 0 to 8 months, smoothed dual-axis plots show that the sentiment index falls sharply during the 2008–2009 and 2020 downturns while unemployment rises and job growth turns negative (Visualization 1). However, the turning points in sentiment and the labor market often occur within a few months of each other, and the lines do not reveal a clean, stable lead of 6–12 months by sentiment. This suggests that the headline index captures broad business-cycle conditions but has limited incremental power for timing short-run labor-market changes.
 
-***Finding 2.*** (See Visualization 2).
+***Finding 2.***
+Net unemployment expectations are systematically related to future unemployment changes.
 
-***Finding 3.*** (See Visualization 3).
+When we convert the expectations table into a net balance ('less' minus 'more' unemployment) and relate it to subsequent changes in the unemployment rate, we obtain consistently negative slopes and correlations that strengthen with the horizon (Visualization 2). For 6–12-month horizons, the correlation between net expectations and future unemployment changes reaches roughly −0.3 to −0.4, and a 10-point deterioration in net expectations is associated with about a 0.3–0.5 percentage-point increase in unemployment over the following year. Although the R-Squared values are modest (around 0.10–0.18), this pattern indicates that households' specific views about unemployment contain forward-looking information.
+
+***Finding 3.***
+Time-series comparisons confirm that expectations move ahead of realized unemployment around major turning points.
+
+In time-series plots that overlay net unemployment expectations and the unemployment rate shifted forward by several months (Visualization 3), we observe that expectations often deteriorate before unemployment peaks and improve before unemployment bottoms out, especially around the 2008–2009 and 2020 episodes. The smoothed series highlight a broad inverted relationship: when a larger share of respondents expects higher unemployment, the future unemployment rate tends to be elevated. This supports the idea that expectations embed information about upcoming labor-market conditions beyond contemporaneous sentiment.
 
 \newpage
 
@@ -136,14 +150,15 @@ CS <- get_sca_table(1) %>%
   arrange(date) %>%
   select(date, cs, year, month)
 ```
-Preview of Consumer Sentiment Data
+
+**Preview of Consumer Sentiment Data**
+
 ```{r}
 #| warning: false
 #| echo: false
 #| message: false
 head(CS)
 ```
-
 
 ```{r}
 #| warning: false
@@ -167,7 +182,8 @@ UNEPLY1 <- get_sca_table(30) %>%
   relocate(date)
 ```
 
-Preview of Expected Change in Unemployment During the Next Year
+**Preview of Expected Change in Unemployment During the Next Year**
+
 ```{r}
 #| warning: false
 #| echo: false
@@ -229,7 +245,7 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
   )
 ```
 
-- BRIEF EXPLAIN HERE
+-   BRIEF EXPLAIN HERE
 
 ```{r}
 #| warning: false
@@ -305,7 +321,9 @@ Job_V <- bls_long %>%
     job_change  = nonfarm_emp - lag(nonfarm_emp)
   )
 ```
-Preview of BLS Data - Unemployment Rate and Job Change
+
+**Preview of BLS Data - Unemployment Rate and Job Change**
+
 ```{r}
 #| warning: false
 #| echo: false
@@ -328,7 +346,8 @@ macro <- CS %>%
   arrange(date)
 ```
 
-Preview of Merged Monthly Aligned Macro Data
+**Preview of Merged Monthly Aligned Macro Data**
+
 ```{r}
 #| warning: false
 #| echo: false
@@ -370,14 +389,14 @@ cs_vs_unemp <- function(data,
   
   ggplot(df, aes(x = date)) +
     # raw lines (lighter)
-    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.4) +
-    geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.4) +
+    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.382) +
+    geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.382) +
     
     # smoothed lines (highlighted)
     geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     geom_smooth(aes(y = unrate_scaled, color = unemp_label),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     
     scale_y_continuous(
       name   = "Consumer Sentiment Index",
@@ -410,10 +429,10 @@ cs_vs_unemp (macro, lag_months = 5)
 cs_vs_unemp (macro, lag_months = 7)
 cs_vs_unemp (macro, lag_months = 8)
 ```
-- ANALYSIS HERE
-- EXPLAIN LOGISTICS OF SMOOTHING
-- ENDED UP NOT THAT CLEAR INDICATING
 
+-   ANALYSIS HERE
+-   EXPLAIN LOGISTICS OF SMOOTHING
+-   ENDED UP NOT THAT CLEAR INDICATING
 
 ```{r}
 #| warning: false
@@ -447,14 +466,14 @@ cs_vs_jobs <- function(data,
   
   ggplot(df, aes(x = date)) +
     # raw lines (lighter)
-    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.4) +
-    geom_line(aes(y = jobchg_scaled, color = jobs_label), alpha = 0.4) +
+    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.382) +
+    geom_line(aes(y = jobchg_scaled, color = jobs_label), alpha = 0.382) +
     
     # smoothed lines (highlighted)
     geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     geom_smooth(aes(y = jobchg_scaled, color = jobs_label),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     
     scale_y_continuous(
       name   = "Consumer Sentiment Index",
@@ -488,15 +507,16 @@ cs_vs_jobs(macro, lag_months =6)
 cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
-- ANALYSIS HERE
-- EXPLAIN TEST & FINDING ON DIFFERENT LAGS
-- EXPLAIN LOGISTICS OF SMOOTHING
+
+-   ANALYSIS HERE
+-   EXPLAIN TEST & FINDING ON DIFFERENT LAGS
+-   EXPLAIN LOGISTICS OF SMOOTHING
 
 \newpage
 
 ## Visualization 2. Net expectations vs Subsequent unemployment change
 
-- ADD LOGISTICS OF CALCULATING NET EXPECTATIONS OF UNEMPLOYMENT HERE! (MAYBE SHOW BRIEF DATAFRAME?)
+-   ADD LOGISTICS OF CALCULATING NET EXPECTATIONS OF UNEMPLOYMENT HERE! (MAYBE SHOW BRIEF DATAFRAME?)
 
 ```{r}
 #| warning: false
@@ -581,7 +601,7 @@ for (i in seq_along(horizons)) {
 plots_set
 ```
 
-- MAKE A CONCLUSION & INDICATION HERE!
+-   MAKE A CONCLUSION & INDICATION HERE!
 
 ## Visualization 3. Time series of net expectations vs actual unemployment - NEED TO FINE TUNE PLOT SIZES FOR ALL PLOTS
 
@@ -618,18 +638,18 @@ expect_vs_unemp_dual <- function(data_macro2,
     # raw lines (lighter)
     geom_line(aes(y = net_unemp_expect,
                   color = "Net expectations (Less-More)"),
-              alpha = 0.4) +
+              alpha = 0.382) +
     geom_line(aes(y = unrate_scaled,
                   color = unemp_label),
-              alpha = 0.4) +
+              alpha = 0.382) +
     
     # smoothed lines (highlighted)
     geom_smooth(aes(y = net_unemp_expect,
                     color = "Net expectations (Less-More)"),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     geom_smooth(aes(y = unrate_scaled,
                     color = unemp_label),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
+                se = FALSE, span = 0.2, linewidth = 1) +
     
     scale_y_continuous(
       name   = "Net (Less-More) unemployment expectations",
@@ -669,8 +689,9 @@ expect_vs_unemp_dual(macro2, lag_months = 10)
 expect_vs_unemp_dual(macro2, lag_months = 11)
 expect_vs_unemp_dual(macro2, lag_months = 12)
 ```
-- EXPLAIN LOGISTICS
-- MAKE A CONCLUSION & INDICATION HERE!
+
+-   EXPLAIN LOGISTICS
+-   MAKE A CONCLUSION & INDICATION HERE!
 
 \newpage
 
@@ -686,7 +707,7 @@ expect_vs_unemp_dual(macro2, lag_months = 12)
 
 # Limitation
 
-|
+| 
 
 \newpage
 
