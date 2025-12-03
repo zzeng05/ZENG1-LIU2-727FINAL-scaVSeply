@@ -54,13 +54,11 @@ format:
 
 ***Finding 1.*** Finding Theme
 
-State the finding in a few lines (See Figure 1).
+State the finding in a few lines (See Visualization 1).
 
-***Finding 2.*** (See Figure 2).
+***Finding 2.*** (See Visualization 2).
 
-***Finding 3.*** (See Figure 3).  
-
-# Limitations
+***Finding 3.*** (See Visualization 3).
 
 \newpage
 
@@ -181,15 +179,24 @@ UNEPLY_long <- UNEPLY_supp %>%
     values_to = "share"
   )
 
+UNEPLY_long <- UNEPLY_long |>
+  dplyr::mutate(
+    expectation = factor(
+      expectation,
+      levels = c("less_unemp", "same_unemp", "more_unemp"),
+      labels = c("Less unemployment", "Same", "More unemployment")
+    )
+  )
+
 ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
   geom_area(alpha = 0.618) +
   scale_fill_manual(
     values = c(
-      less_unemp = "darkgreen",
-      same_unemp = "grey",
-      more_unemp = "firebrick"
+      "Less unemployment" = "darkgreen",
+      "Same"              = "grey70",
+      "More unemployment" = "firebrick"
     ),
-    labels = c("Less unemployment", "Same", "More unemployment")
+    guide = guide_legend(reverse = FALSE)
   ) +
   labs(
     title = "Expected change in unemployment over the next year",
@@ -197,9 +204,10 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
     y     = "Percent of respondents",
     fill  = NULL
   ) +
-  theme_minimal()
-
-
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank()
+  )
 ```
 
 ```{r}
@@ -276,7 +284,7 @@ head(UNEPLOY_R)
 head(Job_V)
 ```
 
-## Figure 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
+## Visualization 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
 
 ```{r}
 #| echo: false
@@ -351,7 +359,11 @@ cs_vs_unemp <- function(data,
     )
 }
 
+cs_vs_unemp (macro, lag_months = 0)
 cs_vs_unemp (macro, lag_months = 6)
+cs_vs_unemp (macro, lag_months = 5)
+cs_vs_unemp (macro, lag_months = 7)
+cs_vs_unemp (macro, lag_months = 8)
 ```
 
 ```{r}
@@ -412,122 +424,16 @@ cs_vs_jobs <- function(data,
     )
 }
 
-cs_vs_jobs(macro, lag_months =8)
-
-cs_vs_jobs(macro, lag_months =7)
-
-cs_vs_jobs(macro, lag_months =6)
-
-cs_vs_jobs(macro, lag_months =5)
-
 cs_vs_jobs(macro, lag_months =0)
-
-```
-
-```{r}
-## Main dual-axis plot: CS vs future job creation
-## with unemployment extremes overlaid (no separate y-axis)
-
-lag_months  <- 3                   # choose 3, 6, or 12
-cs_limits   <- c(40, 120)          # left axis (CS)
-jobs_limits <- c(-1000, 1000)      # right axis (job change, thousands)
-unemp_limits <- c(2, 12)           # used only for scaling unemployment vertically
-
-df <- macro %>%
-  arrange(date) %>%
-  mutate(
-    jobchg_lead = lead(job_change, lag_months),
-    unrate_lead = lead(unrate,      lag_months)
-  ) %>%
-  filter(!is.na(cs), !is.na(jobchg_lead), !is.na(unrate_lead))
-
-# unpack limits
-cs_min   <- cs_limits[1];  cs_max <- cs_limits[2]
-jb_min   <- jobs_limits[1]; jb_max <- jobs_limits[2]
-ur_min   <- unemp_limits[1]; ur_max <- unemp_limits[2]
-
-cs_range <- cs_max - cs_min
-jb_range <- jb_max - jb_min
-ur_range <- ur_max - ur_min
-
-# scale job change & unemployment into CS vertical space for plotting
-df <- df %>%
-  mutate(
-    jobchg_scaled = cs_min + (jobchg_lead - jb_min) * (cs_range / jb_range),
-    unrate_scaled = cs_min + (unrate_lead - ur_min) * (cs_range / ur_range)
-  )
-
-# pick a few extreme unemployment values (e.g., 3 highest & 3 lowest)
-top3 <- df %>% slice_max(order_by = unrate_lead, n = 3)
-bottom3 <- df %>% slice_min(order_by = unrate_lead, n = 3)
-
-unemp_extremes <- bind_rows(top3, bottom3) %>%
-  arrange(date) %>%
-  distinct(date, .keep_all = TRUE)
-
-# legend labels
-cs_label    <- "Consumer Sentiment"
-job_label   <- paste0("Job change (t + ", lag_months, "m)")
-unemp_label <- "Unemployment (no axis)"
-
-ggplot(df, aes(x = date)) +
-  # main series: Consumer Sentiment (left axis)
-  geom_line(aes(y = cs, color = cs_label), linewidth = 0.7) +
-  
-  # main series: job creation (right axis, scaled onto CS scale)
-  geom_line(aes(y = jobchg_scaled, color = job_label),
-            linewidth = 0.7) +
-  
-  # overlay unemployment (same lag), no axis – dashed grey line
-  geom_line(aes(y = unrate_scaled, color = unemp_label),
-            linewidth = 0.4, alpha = 0.5, linetype = "dashed") +
-  
-  # label only extreme high/low unemployment months
-  geom_point(
-    data = unemp_extremes,
-    aes(y = unrate_scaled),
-    color = "black", size = 1.8
-  ) +
-  geom_text(
-    data = unemp_extremes,
-    aes(y = unrate_scaled,
-        label = sprintf("%.1f%%", unrate_lead)),
-    vjust = -0.4,
-    size  = 3,
-    color = "black"
-  ) +
-  
-  # dual y-axes: left = CS, right = job change
-  scale_y_continuous(
-    name   = "Consumer Sentiment Index",
-    limits = cs_limits,
-    sec.axis = sec_axis(
-      trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
-      name  = paste0("Monthly change in nonfarm employment (thousands), t + ",
-                     lag_months, " months")
-    )
-  ) +
-  scale_color_manual(
-    values = setNames(
-      c("steelblue", "darkgreen", "grey50"),
-      c(cs_label, job_label, unemp_label)
-    )
-  ) +
-  labs(
-    title = paste0("Consumer Sentiment vs Future Job Creation (", lag_months, "-month lead)"),
-    subtitle = "Unemployment rate at the same horizon is shown as a dashed line; extremes are labeled",
-    x = "Date",
-    color = NULL
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom"
-  )
+cs_vs_jobs(macro, lag_months =6)
+cs_vs_jobs(macro, lag_months =5)
+cs_vs_jobs(macro, lag_months =7)
+cs_vs_jobs(macro, lag_months =8)
 ```
 
 \newpage
 
-## Figure 2. Scatter: net expectations vs subsequent unemployment change
+## Visualization 2. Scatter: net expectations vs subsequent unemployment change
 
 ```{r}
 #| echo: false
@@ -542,21 +448,21 @@ df_scatter <- macro2 %>%
   filter(!is.na(net_unemp_expect), !is.na(unrate_3m_delta))
 
 ggplot(df_scatter, aes(x = net_unemp_expect, y = unrate_3m_delta)) +
-  geom_point(alpha = 0.4) +
+  geom_point(alpha = 0.382) +
   geom_smooth(method = "lm", se = FALSE, color = "red") +
   labs(
     title = "Net unemployment expectations vs. 3-month change in actual unemployment",
-    x     = "Net % expecting less minus more unemployment (t)",
-    y     = "Change in unemployment over the next 3 months (percentage points)"
+    x     = "Net % expecting less minus more unemployment",
+    y     = "Change in unemployment over the next 3 months"
   ) +
   theme_minimal()
 ```
 
-## Figure 3. Time series: net expectations vs actual unemployment (dual axis)
+## Visualization 3. Time series: net expectations vs actual unemployment (dual axis)
 
 ```{r}
-plot_expect_vs_unemp_dual <- function(data_macro2,
-                                      cs_limits   = c(-60, 60),   # for net expectations
+expect_vs_unemp_dual <- function(data_macro2,
+                                      cs_limits   = c(-60, 60), # for net expectations
                                       unemp_limits= c(2, 12)) {
   
   df <- data_macro2 %>%
@@ -602,20 +508,24 @@ plot_expect_vs_unemp_dual <- function(data_macro2,
     theme(legend.position = "bottom")
 }
 
-plot_expect_vs_unemp_dual(macro2)
+expect_vs_unemp_dual(macro2)
 ```
 
 \newpage
 
 # Indications
 
-**Strengthening Tenant Protections.**
+**SOME REAL WORLD INDICATIONS.**
 
 \newpage
 
 # Conclusion & Outlook
 
 | 
+
+# Limitation
+
+|
 
 \newpage
 
