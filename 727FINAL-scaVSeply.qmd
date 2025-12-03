@@ -25,7 +25,6 @@ format:
 \newpage
 
 # Socio-Economic Background
-
 | 
 
 \newpage
@@ -205,7 +204,7 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
   scale_fill_manual(
     values = c(
       "Less unemployment" = "darkgreen",
-      "Same"              = "grey70",
+      "Same"              = "grey",
       "More unemployment" = "firebrick"
     ),
     guide = guide_legend(reverse = FALSE)
@@ -319,73 +318,7 @@ macro <- CS %>%
 head(macro)
 ```
 
-```{r}
-#| warning: false
-#| echo: false
-#| message: false
-# Function to plot Consumer Sentiment vs Unemployment Rate with dual y-axes
-cs_vs_unemp <- function(data,
-                                  lag_months   = 3,
-                                  cs_limits    = c(30, 120),   # left y-axis
-                                  unemp_limits = c(0, 15)) {   # right y-axis
-  
-  df <- data %>%
-    arrange(date) %>%
-    mutate(unrate_lead = lead(unrate, lag_months)) %>%
-    filter(!is.na(cs), !is.na(unrate_lead))
-  
-  # unpack limits
-  cs_min   <- cs_limits[1]
-  cs_max   <- cs_limits[2]
-  ur_min   <- unemp_limits[1]
-  ur_max   <- unemp_limits[2]
-  
-  cs_range <- cs_max - cs_min
-  ur_range <- ur_max - ur_min
-  
-  # scale unemployment into CS scale for plotting
-  df <- df %>%
-    mutate(
-      unrate_scaled = cs_min + (unrate_lead - ur_min) * (cs_range / ur_range)
-    )
-  
-  # dynamic label for the legend
-  unemp_label <- paste0("Unemp (t + ", lag_months, "m)")
-  
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
-    geom_line(aes(y = unrate_scaled, color = unemp_label)) +
-    scale_y_continuous(
-      name   = "Consumer Sentiment Index",
-      limits = cs_limits,
-      sec.axis = sec_axis(
-        trans = ~ (.- cs_min) * (ur_range / cs_range) + ur_min,
-        name  = paste0("Unemployment rate at t + ", lag_months, " months")
-      )
-    ) +
-    scale_color_manual(
-      values = setNames(
-        c("darkblue", "firebrick"),
-        c("Consumer Sentiment", unemp_label)
-      )
-    ) +
-    labs(
-      title = paste0("Consumer Sentiment vs Future Unemployment (", lag_months, "-month lead)"),
-      x     = "Date",
-      color = NULL
-    ) +
-    theme_minimal() +
-    theme(
-      legend.position = "bottom"
-    )
-}
 
-cs_vs_unemp (macro, lag_months = 0)
-cs_vs_unemp (macro, lag_months = 6)
-cs_vs_unemp (macro, lag_months = 5)
-cs_vs_unemp (macro, lag_months = 7)
-cs_vs_unemp (macro, lag_months = 8)
-```
 ```{r}
 #| warning: false
 #| echo: false
@@ -469,71 +402,6 @@ cs_vs_unemp (macro, lag_months = 8)
 #| warning: false
 #| echo: false
 #| message: false
-# function to plot Consumer Sentiment vs Job Change with dual y-axes
-cs_vs_jobs <- function(data,
-                                 lag_months  = 3,
-                                 cs_limits   = c(40, 120), # left y-axis
-                                 jobs_limits = c(-1500, 1500)) {# right y-axis (thousands)
-  
-  df <- data %>%
-    arrange(date) %>%
-    mutate(jobchg_lead = lead(job_change, lag_months)) %>%
-    filter(!is.na(cs), !is.na(jobchg_lead))
-  
-  cs_min   <- cs_limits[1]
-  cs_max   <- cs_limits[2]
-  jb_min   <- jobs_limits[1]
-  jb_max   <- jobs_limits[2]
-  
-  cs_range <- cs_max - cs_min
-  jb_range <- jb_max - jb_min
-  
-  df <- df %>%
-    mutate(
-      jobchg_scaled = cs_min + (jobchg_lead - jb_min) * (cs_range / jb_range)
-    )
-  
-  jobs_label <- paste0("Job change (t + ", lag_months, "m)")
-  
-  ggplot(df, aes(x = date)) +
-    geom_line(aes(y = cs, color = "Consumer Sentiment")) +
-    geom_line(aes(y = jobchg_scaled, color = jobs_label)) +
-    scale_y_continuous(
-      name   = "Consumer Sentiment Index",
-      limits = cs_limits,
-      sec.axis = sec_axis(
-        trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
-        name  = paste0("Added Job (thousands) at t + ",
-                       lag_months, " months")
-      )
-    ) +
-    scale_color_manual(
-      values = setNames(
-        c("darkblue", "darkgreen"),
-        c("Consumer Sentiment", jobs_label)
-      )
-    ) +
-    labs(
-      title = paste0("Consumer Sentiment vs Added Jobs (", lag_months, "-month lead)"),
-      x     = "Date",
-      color = NULL
-    ) +
-    theme_minimal() +
-    theme(
-      legend.position = "bottom"
-    )
-}
-
-cs_vs_jobs(macro, lag_months =0)
-cs_vs_jobs(macro, lag_months =6)
-cs_vs_jobs(macro, lag_months =5)
-cs_vs_jobs(macro, lag_months =7)
-cs_vs_jobs(macro, lag_months =8)
-```
-```{r}
-#| warning: false
-#| echo: false
-#| message: false
 # function to plot Consumer Sentiment vs Job Change with dual y-axes + smoothing
 cs_vs_jobs <- function(data,
                        lag_months  = 3,
@@ -604,11 +472,14 @@ cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
 - ANALYSIS HERE
-- EXPLAIN LOGISTICS OF SMOOTHING
+- EXPLAIN TEST & FINDING ON DIFFERENT LAGS
+- EXPLAIN LOGISTICS OF SMOOTHINGœ
 
 \newpage
 
 ## Visualization 2. Scatter: net expectations vs subsequent unemployment change
+
+- ADD LOGISTICS OF CALCULATING NET EXPECTATIONS OF UNEMPLOYMENT HERE! (MAYBE SHOW BRIEF DATAFRAME?)
 
 ```{r}
 #| warning: false
@@ -695,7 +566,7 @@ plots_set
 
 - MAKE A CONCLUSION & INDICATION HERE!
 
-## Visualization 3. Time series: net expectations vs actual unemployment (dual axis)
+## Visualization 3. Time series: net expectations vs actual unemployment (dual axis) - NEED TO FINE TUNE PLOT SIZES FOR ALL PLOTS
 
 ```{r}
 #| warning: false
@@ -786,7 +657,7 @@ expect_vs_unemp_dual(macro2, lag_months = 12)
 
 \newpage
 
-# Indications
+# Implications
 
 **SOME REAL WORLD INDICATIONS.**
 
