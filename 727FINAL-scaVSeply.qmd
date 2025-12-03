@@ -63,8 +63,6 @@ State the finding in a few lines (See Visualization 1).
 
 # Visualizations
 
-Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
-
 ```{r setup}
 #| warning: false
 #| echo: false
@@ -137,9 +135,15 @@ CS <- get_sca_table(1) %>%
   ) %>%
   arrange(date) %>%
   select(date, cs, year, month)
-
+```
+Preview of Consumer Sentiment Data
+```{r}
+#| warning: false
+#| echo: false
+#| message: false
 head(CS)
 ```
+
 
 ```{r}
 #| warning: false
@@ -161,7 +165,13 @@ UNEPLY1 <- get_sca_table(30) %>%
     date = as.Date(sprintf("%04d-%02d-01", Year, Month))
   ) %>%
   relocate(date)
+```
 
+Preview of Expected Change in Unemployment During the Next Year
+```{r}
+#| warning: false
+#| echo: false
+#| message: false
 head(UNEPLY1)
 ```
 
@@ -179,8 +189,6 @@ UNEPLY_supp <- UNEPLY1 %>%
     rel_unemp   = Relative,
     net_unemp_expect = less_unemp - more_unemp
   )
-
-head(UNEPLY_supp)
 
 UNEPLY_long <- UNEPLY_supp %>%
   select(date, less_unemp, same_unemp, more_unemp) %>%
@@ -220,6 +228,7 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
     panel.grid = element_blank()
   )
 ```
+
 - BRIEF EXPLAIN HERE
 
 ```{r}
@@ -271,8 +280,6 @@ bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
       date  = ymd(sprintf("%04d-%02d-01", year, month))
     )
 })
-
-head(bls_long)
 ```
 
 ```{r}
@@ -297,7 +304,12 @@ Job_V <- bls_long %>%
     nonfarm_emp = value,
     job_change  = nonfarm_emp - lag(nonfarm_emp)
   )
-
+```
+Preview of BLS Data - Unemployment Rate and Job Change
+```{r}
+#| warning: false
+#| echo: false
+#| message: false
 head(UNEPLOY_R)
 head(Job_V)
 ```
@@ -314,10 +326,15 @@ macro <- CS %>%
   left_join(UNEPLOY_R, by = "date") %>%
   left_join(Job_V,     by = "date") %>%
   arrange(date)
-
-head(macro)
 ```
 
+Preview of Merged Monthly Aligned Macro Data
+```{r}
+#| warning: false
+#| echo: false
+#| message: false
+head(macro)
+```
 
 ```{r}
 #| warning: false
@@ -466,18 +483,18 @@ cs_vs_jobs <- function(data,
 }
 
 cs_vs_jobs(macro, lag_months =0)
-cs_vs_jobs(macro, lag_months =6)
 cs_vs_jobs(macro, lag_months =5)
+cs_vs_jobs(macro, lag_months =6)
 cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
 - ANALYSIS HERE
 - EXPLAIN TEST & FINDING ON DIFFERENT LAGS
-- EXPLAIN LOGISTICS OF SMOOTHINGœ
+- EXPLAIN LOGISTICS OF SMOOTHING
 
 \newpage
 
-## Visualization 2. Scatter: net expectations vs subsequent unemployment change
+## Visualization 2. Net expectations vs Subsequent unemployment change
 
 - ADD LOGISTICS OF CALCULATING NET EXPECTATIONS OF UNEMPLOYMENT HERE! (MAYBE SHOW BRIEF DATAFRAME?)
 
@@ -566,7 +583,7 @@ plots_set
 
 - MAKE A CONCLUSION & INDICATION HERE!
 
-## Visualization 3. Time series: net expectations vs actual unemployment (dual axis) - NEED TO FINE TUNE PLOT SIZES FOR ALL PLOTS
+## Visualization 3. Time series of net expectations vs actual unemployment - NEED TO FINE TUNE PLOT SIZES FOR ALL PLOTS
 
 ```{r}
 #| warning: false
@@ -672,6 +689,8 @@ expect_vs_unemp_dual(macro2, lag_months = 12)
 |
 
 \newpage
+
+Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
 
 # References
 
