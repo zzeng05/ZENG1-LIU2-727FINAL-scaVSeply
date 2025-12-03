@@ -86,6 +86,9 @@ library(purrr)
 ```
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 # Fetch SCA Data
 cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
 
@@ -115,6 +118,9 @@ get_sca_table <- function(table_num,
 ```
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 #fetch & clean table1: Consumer Sentiment Index
 CS <- get_sca_table(1) %>%
   # same logic as your cs_tables[[2]] cleaning
@@ -137,6 +143,9 @@ head(CS)
 ```
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 #fetch & clean table30: Expected Change in Unemployment During the Next Year
 UNEPLY1 <- get_sca_table(30) %>%
   { setNames(., as.character(unlist(.[1, ]))) } %>%
@@ -158,6 +167,9 @@ head(UNEPLY1)
 ```
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 UNEPLY_supp <- UNEPLY1 %>%
   transmute(
     date,
@@ -209,8 +221,12 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
     panel.grid = element_blank()
   )
 ```
+- BRIEF EXPLAIN HERE
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 # Fetch BLS Data
 
 bls_key <- "554489bce3f14059aaa2dbb976d62372" #need to change back to path before submission!!!
@@ -261,6 +277,9 @@ head(bls_long)
 ```
 
 ```{r}
+#| warning: false
+#| echo: false
+#| message: false
 # CPS unemployment rate
 UNEPLOY_R <- bls_long %>%
   filter(series_id == "LNS14000000") %>%
@@ -287,8 +306,9 @@ head(Job_V)
 ## Visualization 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
 
 ```{r}
-#| echo: false
 #| warning: false
+#| echo: false
+#| message: false
 # Merge SCA and BLS series into one panel
 macro <- CS %>%
   select(date, cs) %>%
@@ -301,6 +321,7 @@ head(macro)
 
 ```{r}
 #| warning: false
+#| echo: false
 #| message: false
 # Function to plot Consumer Sentiment vs Unemployment Rate with dual y-axes
 cs_vs_unemp <- function(data,
@@ -367,6 +388,7 @@ cs_vs_unemp (macro, lag_months = 8)
 ```
 ```{r}
 #| warning: false
+#| echo: false
 #| message: false
 cs_vs_unemp <- function(data,
                         lag_months   = 3,
@@ -438,11 +460,14 @@ cs_vs_unemp (macro, lag_months = 5)
 cs_vs_unemp (macro, lag_months = 7)
 cs_vs_unemp (macro, lag_months = 8)
 ```
-
+- ANALYSIS HERE
+- EXPLAIN LOGISTICS OF SMOOTHING
+- ENDED UP NOT THAT CLEAR INDICATING
 
 
 ```{r}
 #| warning: false
+#| echo: false
 #| message: false
 # function to plot Consumer Sentiment vs Job Change with dual y-axes
 cs_vs_jobs <- function(data,
@@ -507,6 +532,7 @@ cs_vs_jobs(macro, lag_months =8)
 ```
 ```{r}
 #| warning: false
+#| echo: false
 #| message: false
 # function to plot Consumer Sentiment vs Job Change with dual y-axes + smoothing
 cs_vs_jobs <- function(data,
@@ -577,7 +603,8 @@ cs_vs_jobs(macro, lag_months =5)
 cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
-
+- ANALYSIS HERE
+- EXPLAIN LOGISTICS OF SMOOTHING
 
 \newpage
 
@@ -585,6 +612,7 @@ cs_vs_jobs(macro, lag_months =8)
 
 ```{r}
 #| warning: false
+#| echo: false
 #| message: false
 macro2 <- macro %>%
   left_join(UNEPLY_supp, by = "date") %>%
@@ -665,77 +693,13 @@ for (i in seq_along(horizons)) {
 plots_set
 ```
 
+- MAKE A CONCLUSION & INDICATION HERE!
+
 ## Visualization 3. Time series: net expectations vs actual unemployment (dual axis)
 
 ```{r}
 #| warning: false
-#| message: false
-expect_vs_unemp_dual <- function(data_macro2,
-                                 cs_limits    = c(-60, 60),# for net expectations
-                                 unemp_limits = c(2, 12)) {# for unemployment
-  
-  df <- data_macro2 %>%
-    filter(!is.na(net_unemp_expect), !is.na(unrate)) %>%
-    arrange(date)
-  
-  ex_min <- cs_limits[1]
-  ex_max <- cs_limits[2]
-  ur_min <- unemp_limits[1]
-  ur_max <- unemp_limits[2]
-  
-  ex_rng <- ex_max - ex_min
-  ur_rng <- ur_max - ur_min
-  
-  df <- df %>%
-    mutate(
-      unrate_scaled = ex_min + (unrate - ur_min) * (ex_rng / ur_rng)
-    )
-  
-  ggplot(df, aes(x = date)) +
-    # raw lines (lighter)
-    geom_line(aes(y = net_unemp_expect,
-                  color = "Net expectations (Less-More)"),
-              alpha = 0.4) +
-    geom_line(aes(y = unrate_scaled,
-                  color = "Unemployment"),
-              alpha = 0.4) +
-    
-    # smoothed lines (highlighted)
-    geom_smooth(aes(y = net_unemp_expect,
-                    color = "Net expectations (Less-More)"),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
-    geom_smooth(aes(y = unrate_scaled,
-                    color = "Unemployment"),
-                se = FALSE, span = 0.2, linewidth = 0.9) +
-    
-    scale_y_continuous(
-      name   = "Net (Less-More) unemployment expectations",
-      limits = cs_limits,
-      sec.axis = sec_axis(
-        trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = "Unemployment rate (%)"
-      )
-    ) +
-    scale_color_manual(
-      values = setNames(
-        c("darkgreen", "firebrick"),
-        c("Net expectations (Less-More)", "Unemployment")
-      )
-    ) +
-    labs(
-      title = "Net Unemployment Expectations vs Actual Unemployment",
-      x     = "Date",
-      color = NULL
-    ) +
-    theme_minimal() +
-    theme(legend.position = "bottom")
-}
-
-
-expect_vs_unemp_dual(macro2)
-```
-```{r}
-#| warning: false
+#| echo: false
 #| message: false
 expect_vs_unemp_dual <- function(data_macro2,
                                  lag_months   = 3,
@@ -804,6 +768,9 @@ expect_vs_unemp_dual <- function(data_macro2,
     theme(legend.position = "bottom")
 }
 
+expect_vs_unemp_dual(macro2, lag_months = 0)
+expect_vs_unemp_dual(macro2, lag_months = 1)
+expect_vs_unemp_dual(macro2, lag_months = 2)
 expect_vs_unemp_dual(macro2, lag_months = 3)
 expect_vs_unemp_dual(macro2, lag_months = 6)
 expect_vs_unemp_dual(macro2, lag_months = 5)
@@ -814,6 +781,8 @@ expect_vs_unemp_dual(macro2, lag_months = 10)
 expect_vs_unemp_dual(macro2, lag_months = 11)
 expect_vs_unemp_dual(macro2, lag_months = 12)
 ```
+- EXPLAIN LOGISTICS
+- MAKE A CONCLUSION & INDICATION HERE!
 
 \newpage
 
