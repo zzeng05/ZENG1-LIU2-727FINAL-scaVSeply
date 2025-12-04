@@ -15,13 +15,14 @@ format:
 \fancyfoot[R]{\thepage}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.382pt}
-\begin{center} \includegraphics[width=0.3\columnwidth]{images} \end{center}
+\begin{center} \includegraphics[width=0.382\columnwidth]{images} \end{center}
 \begin{center}
   {\Large Consumer Sentiments VS. Economy Realities\\
-  Longitudinal Analysis of Changing Consumer Perceptions in Relation to Employment\par}
+  A Longitudinal Analysis of Changing Consumer Perceptions in Relation to Employment\par}
 \end{center}
 \begin{center} {Zupeng Zeng \& Troy (Shengkun) Liu} \end{center}
 \begin{center} {December 2025} \end{center}
+\begin{center} {https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git} \end{center}
 \newpage
 
 # Socio-Economic Background
@@ -45,13 +46,14 @@ format:
 
 -   Do qualitative expectations about unemployment have predictive content for subsequent changes in the unemployment rate, beyond what is captured by the aggregate sentiment index more directly?
 
-# Data Source and Assumptions
+# Data Source & Assumptions
 
 |   Our primary predictors come from the University of Michigan Survey of Consumers. We programmatically request historical tables through the Survey’s web interface, using a small wrapper function to POST table numbers, years, and frequency parameters and then parse the resulting HTML tables. Table 1 provides the headline Index of Consumer Sentiment; Table 30 provides the distribution of responses about expected change in unemployment during the next year. From Table 30 we construct a “net unemployment expectation” measure equal to the percentage expecting less unemployment minus the percentage expecting more unemployment.
 
 |   Outcome variables come from the BLS API. We query the CPS unemployment rate (seasonally adjusted) and CES total nonfarm employment, both at monthly frequency from 2008 onward. We compute monthly job changes as first differences in employment. Throughout, we assume that the SCA and BLS time stamps are aligned to the same reference month and that seasonal adjustment and revisions have already been applied by the source agencies. We treat the post-2008 period as a single sample, implicitly assuming that survey questions and measurement practices are stable enough over time to allow pooling.
 
-# Data Cleaning Process
+# Data Cleaning
+
 |   For the SCA tables, we first standardize column names, drop repeated header rows, and coerce month/year fields to integers. We then create a calendar date variable set to the first day of each month and convert index and share variables to numeric form, handling the occasional “DK; NA” responses as missing. For the unemployment expectations table, we compute the net expectation series and reshape the component shares into long format for visualization.
 
 |   For the BLS data, we query multiple series IDs in a single API call and then unnest them into a long tibble with explicit series_id, year, period, and value columns. We keep only monthly records (M01–M12), derive numeric month values, and again construct a date variable. We then split the long table into a CPS unemployment-rate series and a CES employment series, calculating monthly job changes from the latter. Finally, we merge the SCA and BLS datasets by date, resulting in a panel where each row corresponds to a month with consumer sentiment, unemployment expectations, unemployment rate, and employment growth aligned.
@@ -61,17 +63,17 @@ format:
 ***Finding 1.***
 Consumer Sentiment co-moves with, but does not sharply lead, unemployment or job growth.
 
-Across a range of leads from 0 to 8 months, smoothed dual-axis plots show that the sentiment index falls sharply during the 2008–2009 and 2020 downturns while unemployment rises and job growth turns negative (Visualization 1). However, the turning points in sentiment and the labor market often occur within a few months of each other, and the lines do not reveal a clean, stable lead of 6–12 months by sentiment. This suggests that the headline index captures broad business-cycle conditions but has limited incremental power for timing short-run labor-market changes.
+|   Across a range of leads from 0 to 8 months, smoothed dual-axis plots show that the sentiment index falls sharply during the 2008–2009 and 2020 downturns while unemployment rises and job growth turns negative (Visualization 1). However, the turning points in sentiment and the labor market often occur within a few months of each other, and the lines do not reveal a clean, stable lead of 6–12 months by sentiment. This suggests that the headline index captures broad business-cycle conditions but has limited incremental power for timing short-run labor-market changes.
 
 ***Finding 2.***
 Net unemployment expectations are systematically related to future unemployment changes.
 
-When we convert the expectations table into a net balance ('less' minus 'more' unemployment) and relate it to subsequent changes in the unemployment rate, we obtain consistently negative slopes and correlations that strengthen with the horizon (Visualization 2). For 6–12-month horizons, the correlation between net expectations and future unemployment changes reaches roughly −0.3 to −0.4, and a 10-point deterioration in net expectations is associated with about a 0.3–0.5 percentage-point increase in unemployment over the following year. Although the R-Squared values are modest (around 0.10–0.18), this pattern indicates that households' specific views about unemployment contain forward-looking information.
+|   When we convert the expectations table into a net balance ('less' minus 'more' unemployment) and relate it to subsequent changes in the unemployment rate, we obtain consistently negative slopes and correlations that strengthen with the horizon (Visualization 2). For 6–12-month horizons, the correlation between net expectations and future unemployment changes reaches roughly −0.3 to −0.4, and a 10-point deterioration in net expectations is associated with about a 0.3–0.5 percentage-point increase in unemployment over the following year. Although the R-Squared values are modest (around 0.10–0.18), this pattern indicates that households' specific views about unemployment contain forward-looking information.
 
 ***Finding 3.***
 Time-series comparisons confirm that expectations move ahead of realized unemployment around major turning points.
 
-In time-series plots that overlay net unemployment expectations and the unemployment rate shifted forward by several months (Visualization 3), we observe that expectations often deteriorate before unemployment peaks and improve before unemployment bottoms out, especially around the 2008–2009 and 2020 episodes. The smoothed series highlight a broad inverted relationship: when a larger share of respondents expects higher unemployment, the future unemployment rate tends to be elevated. This supports the idea that expectations embed information about upcoming labor-market conditions beyond contemporaneous sentiment.
+|   In time-series plots that overlay net unemployment expectations and the unemployment rate shifted forward by several months (Visualization 3), we observe that expectations often deteriorate before unemployment peaks and improve before unemployment bottoms out, especially around the 2008–2009 and 2020 episodes. The smoothed series highlight a broad inverted relationship: when a larger share of respondents expects higher unemployment, the future unemployment rate tends to be elevated. This supports the idea that expectations embed information about upcoming labor-market conditions beyond contemporaneous sentiment.
 
 \newpage
 
@@ -101,29 +103,29 @@ library(purrr)
 #| echo: false
 #| message: false
 # Fetch SCA Data
-cs_url <- "https://data.sca.isr.umich.edu/data-archive/mine.php#"
+cs_url <- 'https://data.sca.isr.umich.edu/data-archive/mine.php#'
 
 #function to fetch any sca table from data site
 get_sca_table <- function(table_num,
                                from_year = 2008,
                                to_year   = 2025,
-                               freq      = "monthly") {
+                               freq      = 'monthly') {
   
   body_list <- list(
     table = as.character(table_num),
-    format = "html",
+    format = 'html',
     from   = as.character(from_year),
     to     = as.character(to_year),
     freq   = freq
   )
   
-  res <- POST(cs_url, body = body_list, encode = "form")
+  res <- POST(cs_url, body = body_list, encode = 'form')
   stop_for_status(res)
   
   page <- read_html(res)
   
   page %>%
-    html_node("div.output table") %>%
+    html_node('div.output table') %>%
     html_table(fill = TRUE)
 }
 ```
@@ -145,7 +147,7 @@ CS <- get_sca_table(1) %>%
     month = as.integer(month_chr),
     year  = as.integer(year_chr),
     cs    = as.numeric(cs_chr),
-    date  = ymd(sprintf("%04d-%02d-01", year, month))
+    date  = ymd(sprintf('%04d-%02d-01', year, month))
   ) %>%
   arrange(date) %>%
   select(date, cs, year, month)
@@ -177,7 +179,7 @@ UNEPLY1 <- get_sca_table(30) %>%
       -c(Month, Year),
       ~ suppressWarnings(as.numeric(.))
     ),
-    date = as.Date(sprintf("%04d-%02d-01", Year, Month))
+    date = as.Date(sprintf('%04d-%02d-01', Year, Month))
   ) %>%
   relocate(date)
 ```
@@ -195,6 +197,9 @@ head(UNEPLY1)
 #| warning: false
 #| echo: false
 #| message: false
+#| fig-width: 7
+#| fig-height: 3.8
+#| out-width: '0.9\\linewidth'
 UNEPLY_supp <- UNEPLY1 %>%
   transmute(
     date,
@@ -210,16 +215,16 @@ UNEPLY_long <- UNEPLY_supp %>%
   select(date, less_unemp, same_unemp, more_unemp) %>%
   pivot_longer(
     cols = -date,
-    names_to  = "expectation",
-    values_to = "share"
+    names_to  = 'expectation',
+    values_to = 'share'
   )
 
 UNEPLY_long <- UNEPLY_long |>
   dplyr::mutate(
     expectation = factor(
       expectation,
-      levels = c("less_unemp", "same_unemp", "more_unemp"),
-      labels = c("Less unemployment", "Same", "More unemployment")
+      levels = c('less_unemp', 'same_unemp', 'more_unemp'),
+      labels = c('Less unemployment', 'Same', 'More unemployment')
     )
   )
 
@@ -227,16 +232,16 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
   geom_area(alpha = 0.618) +
   scale_fill_manual(
     values = c(
-      "Less unemployment" = "darkgreen",
-      "Same"              = "grey",
-      "More unemployment" = "firebrick"
+      'Less unemployment' = 'darkgreen',
+      'Same'              = 'grey',
+      'More unemployment' = 'firebrick'
     ),
     guide = guide_legend(reverse = FALSE)
   ) +
   labs(
-    title = "Expected change in unemployment over the next year",
-    x     = "Date",
-    y     = "Percent of respondents",
+    title = 'Expected change in unemployment over the next year',
+    x     = 'Date',
+    y     = 'Percent of respondents',
     fill  = NULL
   ) +
   theme_minimal() +
@@ -253,27 +258,27 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
 #| message: false
 # Fetch BLS Data
 
-bls_key <- "554489bce3f14059aaa2dbb976d62372" #need to change back to path before submission!!!
+bls_key <- '554489bce3f14059aaa2dbb976d62372' #need to change back to path before submission!!!
 
 # BLS series IDs:
 # - LNS14000000: Unemployment rate (CPS, seasonally adjusted)
 # - CES0000000001: All employees, total nonfarm (CES, thousands, SA)
-series_ids <- c("LNS14000000", "CES0000000001")
+series_ids <- c('LNS14000000', 'CES0000000001')
 
 # Request monthly data from 2008 to latest
 res <- POST(
-  url   = "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+  url   = 'https://api.bls.gov/publicAPI/v2/timeseries/data/',
   body  = list(
   seriesid        = series_ids,
-  startyear       = "2008",
-  endyear         = "2025",
+  startyear       = '2008',
+  endyear         = '2025',
   registrationkey = bls_key),
-  encode = "json"
+  encode = 'json'
 )
 
 stop_for_status(res)
 
-bls_list <- fromJSON(content(res, as = "text", encoding = "UTF-8"), simplifyDataFrame = TRUE)
+bls_list <- fromJSON(content(res, as = 'text', encoding = 'UTF-8'), simplifyDataFrame = TRUE)
 
 # Transform BLS data to long format
 series_tbl <- bls_list$Results$series
@@ -290,10 +295,10 @@ bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
       value     = as.numeric(value)
     ) %>%
     # keep monthly observations (M01–M12)
-    filter(str_starts(period, "M")) %>%
+    filter(str_starts(period, 'M')) %>%
     mutate(
-      month = as.integer(str_remove(period, "M")),
-      date  = ymd(sprintf("%04d-%02d-01", year, month))
+      month = as.integer(str_remove(period, 'M')),
+      date  = ymd(sprintf('%04d-%02d-01', year, month))
     )
 })
 ```
@@ -304,7 +309,7 @@ bls_long <- map_dfr(seq_len(nrow(series_tbl)), function(i) {
 #| message: false
 # CPS unemployment rate
 UNEPLOY_R <- bls_long %>%
-  filter(series_id == "LNS14000000") %>%
+  filter(series_id == 'LNS14000000') %>%
   arrange(date) %>%
   transmute(
     date,
@@ -313,7 +318,7 @@ UNEPLOY_R <- bls_long %>%
 
 # CES total nonfarm employment & monthly job change
 Job_V <- bls_long %>%
-  filter(series_id == "CES0000000001") %>%
+  filter(series_id == 'CES0000000001') %>%
   arrange(date) %>%
   transmute(
     date,
@@ -332,6 +337,8 @@ head(UNEPLOY_R)
 head(Job_V)
 ```
 
+\newpage
+
 ## Visualization 1. Lagged Time-Series of Consumer Sentiment & Unemployment Rate/Job Change
 
 ```{r}
@@ -341,8 +348,8 @@ head(Job_V)
 # Merge SCA and BLS series into one panel
 macro <- CS %>%
   select(date, cs) %>%
-  left_join(UNEPLOY_R, by = "date") %>%
-  left_join(Job_V,     by = "date") %>%
+  left_join(UNEPLOY_R, by = 'date') %>%
+  left_join(Job_V,     by = 'date') %>%
   arrange(date)
 ```
 
@@ -359,6 +366,10 @@ head(macro)
 #| warning: false
 #| echo: false
 #| message: false
+#| fig-width: 7
+#| fig-height: 4
+#| out-width: '0.9\\linewidth'
+#| fig-align: 'center'
 cs_vs_unemp <- function(data,
                         lag_months   = 3,
                         cs_limits    = c(30, 120),   # left y-axis
@@ -385,41 +396,41 @@ cs_vs_unemp <- function(data,
     )
   
   # dynamic label for the legend
-  unemp_label <- paste0("Unemp (t + ", lag_months, "m)")
+  unemp_label <- paste0('Unemp (t + ', lag_months, 'm)')
   
   ggplot(df, aes(x = date)) +
     # raw lines
-    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.618) +
+    geom_line(aes(y = cs, color = 'Consumer Sentiment'), alpha = 0.618) +
     geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.618) +
     
     # smoothed lines
-    geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
+    geom_smooth(aes(y = cs, color = 'Consumer Sentiment'),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = unrate_scaled, color = unemp_label),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
-      name   = "Consumer Sentiment Index",
+      name   = 'Consumer Sentiment Index',
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- cs_min) * (ur_range / cs_range) + ur_min,
-        name  = paste0("Unemployment rate at t + ", lag_months, " months")
+        name  = paste0('Unemployment rate at t + ', lag_months, ' months')
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c("darkblue", "firebrick"),
-        c("Consumer Sentiment", unemp_label)
+        c('darkblue', 'firebrick'),
+        c('Consumer Sentiment', unemp_label)
       )
     ) +
     labs(
-      title = paste0("Consumer Sentiment vs Future Unemployment (", lag_months, "-month lead)"),
-      x     = "Date",
+      title = paste0('Consumer Sentiment vs Future Unemployment (', lag_months, '-month lead)'),
+      x     = 'Date',
       color = NULL
     ) +
     theme_minimal() +
     theme(
-      legend.position = "bottom"
+      legend.position = 'bottom'
     )
 }
 
@@ -440,6 +451,10 @@ cs_vs_unemp (macro, lag_months = 8)
 #| warning: false
 #| echo: false
 #| message: false
+#| fig-width: 7
+#| fig-height: 4
+#| out-width: '0.9\\linewidth'
+#| fig-align: 'center'
 # function to plot Consumer Sentiment vs Job Change with dual y-axes + smoothing
 cs_vs_jobs <- function(data,
                        lag_months  = 3,
@@ -464,42 +479,42 @@ cs_vs_jobs <- function(data,
       jobchg_scaled = cs_min + (jobchg_lead - jb_min) * (cs_range / jb_range)
     )
   
-  jobs_label <- paste0("Job change (t + ", lag_months, "m)")
+  jobs_label <- paste0('Job change (t + ', lag_months, 'm)')
   
   ggplot(df, aes(x = date)) +
     # raw lines
-    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.382) +
+    geom_line(aes(y = cs, color = 'Consumer Sentiment'), alpha = 0.382) +
     geom_line(aes(y = jobchg_scaled, color = jobs_label), alpha = 0.382) +
     
     # smoothed lines
-    geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
+    geom_smooth(aes(y = cs, color = 'Consumer Sentiment'),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = jobchg_scaled, color = jobs_label),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
-      name   = "Consumer Sentiment Index",
+      name   = 'Consumer Sentiment Index',
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- cs_min) * (jb_range / cs_range) + jb_min,
-        name  = paste0("Added Job (thousands) at t + ",
-                       lag_months, " months")
+        name  = paste0('Added Job (thousands) at t + ',
+                       lag_months, ' months')
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c("darkblue", "darkgreen"),
-        c("Consumer Sentiment", jobs_label)
+        c('darkblue', 'darkgreen'),
+        c('Consumer Sentiment', jobs_label)
       )
     ) +
     labs(
-      title = paste0("Consumer Sentiment & Added Jobs (", lag_months, "-month lead)"),
-      x     = "Date",
+      title = paste0('Consumer Sentiment & Added Jobs (', lag_months, '-month lead)'),
+      x     = 'Date',
       color = NULL
     ) +
     theme_minimal() +
     theme(
-      legend.position = "bottom"
+      legend.position = 'bottom'
     )
 }
 
@@ -519,14 +534,18 @@ cs_vs_jobs(macro, lag_months =8)
 
 ## Visualization 2. Net expectations vs Subsequent unemployment change
 
--   From Survey of Consumers, we also obtained the percentages of respondents who expect unemployment to be less, the same, or more during the next year, plus a small 'don’t know / no answer' category. We define a net expectations index as %Less – %More, which ranges roughly from −60 to +60 in our sample. A negative value indicates that more people expect unemployment to rise than to fall, and vice versa.
+|   From Survey of Consumers, we also obtained the percentages of respondents who expect unemployment to be less, the same, or more during the next year, plus a small 'don’t know / no answer' category. We define a net expectations index as %Less – %More, which ranges roughly from −60 to +60 in our sample. A negative value indicates that more people expect unemployment to rise than to fall, and vice versa.
 
 ```{r}
 #| warning: false
 #| echo: false
 #| message: false
+#| fig-width: 7
+#| fig-height: 4
+#| out-width: '0.9\\linewidth'
+#| fig-align: 'center'
 macro2 <- macro %>%
-  left_join(UNEPLY_supp, by = "date") %>%
+  left_join(UNEPLY_supp, by = 'date') %>%
   arrange(date)
 
 expect_vs_unemp_scatter <- function(data,
@@ -545,15 +564,15 @@ expect_vs_unemp_scatter <- function(data,
   lm_fit  <- lm(unrate_delta ~ net_unemp_expect, data = df)
   lm_sum  <- summary(lm_fit)
   
-  slope   <- coef(lm_fit)[["net_unemp_expect"]]
+  slope   <- coef(lm_fit)[['net_unemp_expect']]
   r2      <- lm_sum$r.squared
   
   # scatter plot with tuned aesthetics
   ggplot(df, aes(x = net_unemp_expect, y = unrate_delta)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
+    geom_hline(yintercept = 0, linetype = 'dashed', color = 'grey') +
+    geom_vline(xintercept = 0, linetype = 'dashed', color = 'grey') +
     geom_point(alpha = 0.382, size = 1.618) +
-    geom_smooth(method = "lm", se = FALSE, color = "firebrick", linewidth = 1) +
+    geom_smooth(method = 'lm', se = FALSE, color = 'firebrick', linewidth = 1) +
     scale_x_continuous(
       limits = x_limits,
       breaks = seq(x_limits[1], x_limits[2], by = 20)
@@ -564,29 +583,29 @@ expect_vs_unemp_scatter <- function(data,
     ) +
     labs(
       title = paste0(
-        "Net unemployment expectations vs. ",
-        horizon_months, "-month change in unemployment"
+        'Net unemployment expectations vs. ',
+        horizon_months, '-month unemployment change'
       ),
       subtitle = paste0(
-        "Slope ≈ ", round(slope, 3),
-        " pp / 1-pt net expectation,  R² ≈ ", round(r2, 2)
+        'Slope ≈ ', round(slope, 3),
+        ' pp / 1-pt net expectation,  R² ≈ ', round(r2, 2)
       ),
-      x = "Net % expecting less minus more unemployment (t)",
-      y = paste0("Change in unemployment over next ",
-                 horizon_months, " months (percentage points)")
+      x = 'Net Unemployment Expectation (t)',
+      y = paste0('Unemployment Change over next ',
+                 horizon_months, ' months')
     ) +
     theme_minimal() +
     theme(
-      plot.title.position = "plot",
-      legend.position = "none"
+      plot.title.position = 'plot',
+      legend.position = 'none'
     )
 }
 
 # explore horizons from 1 to 12 months
 horizons <- 0:12
 
-plots_set <- vector("list", length(horizons))
-names(plots_set) <- paste0("h_", horizons, "m")
+plots_set <- vector('list', length(horizons))
+names(plots_set) <- paste0('h_', horizons, 'm')
 
 for (i in seq_along(horizons)) {
   plots_set[[i]] <- expect_vs_unemp_scatter(
@@ -604,6 +623,10 @@ plots_set
 #| warning: false
 #| echo: false
 #| message: false
+#| fig-width: 7
+#| fig-height: 4
+#| out-width: '0.9\\linewidth'
+#| fig-align: 'center'
 expect_vs_unemp_dual <- function(data_macro2,
                                  lag_months   = 3,
                                  cs_limits    = c(-60, 60),# for net expectations
@@ -627,11 +650,11 @@ expect_vs_unemp_dual <- function(data_macro2,
       unrate_scaled = ex_min + (unrate_lead - ur_min) * (ex_rng / ur_rng)
     )
   
-  unemp_label <- paste0("Unemployment (t + ", lag_months, "m)")
+  unemp_label <- paste0('Unemployment (t + ', lag_months, 'm)')
   
   ggplot(df, aes(x = date)) +
     geom_line(aes(y = net_unemp_expect,
-                  color = "Net expectations (Less-More)"),
+                  color = 'Net expectations (Less-More)'),
               alpha = 0.382) +
     geom_line(aes(y = unrate_scaled,
                   color = unemp_label),
@@ -639,35 +662,35 @@ expect_vs_unemp_dual <- function(data_macro2,
     
     # smoothed lines
     geom_smooth(aes(y = net_unemp_expect,
-                    color = "Net expectations (Less-More)"),
+                    color = 'Net expectations (Less-More)'),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = unrate_scaled,
                     color = unemp_label),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
-      name   = "Net (Less-More) unemployment expectations",
+      name   = 'Net (Less-More) unemployment expectations',
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = paste0("Unemployment (%) at t + ",
-                       lag_months, " months")
+        name  = paste0('Unemployment at t + ',
+                       lag_months, ' months')
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c("darkgreen", "firebrick"),
-        c("Net expectations (Less-More)", unemp_label)
+        c('darkgreen', 'firebrick'),
+        c('Net expectations (Less-More)', unemp_label)
       )
     ) +
     labs(
-      title = paste0("Net Unemployment Expectations VS. Unemployment% (",
-                     lag_months, "-month lead)"),
-      x     = "Date",
+      title = paste0('Net Unemployment Expectations VS. Unemployment % (',
+                     lag_months, '-month lead)'),
+      x     = 'Date',
       color = NULL
     ) +
     theme_minimal() +
-    theme(legend.position = "bottom")
+    theme(legend.position = 'bottom')
 }
 
 expect_vs_unemp_dual(macro2, lag_months = 0)
@@ -706,8 +729,6 @@ expect_vs_unemp_dual(macro2, lag_months = 12)
 |   This project has several important limitations. First, the analysis is confined to the post-2008 period, which may over-weight the unique dynamics of the Great Recession and the COVID-19 shock. Second, all relationships are estimated using simple correlations and bivariate regressions with overlapping horizons; we do not account for serial correlation or perform formal out-of-sample forecasting tests. Third, both sentiment and expectations are measured with survey error and may be influenced by factors unrelated to the labor market (e.g., political events), which we do not model. Finally, our dual-axis visualizations involve rescaling variables, which aids interpretation but can be misleading if taken as evidence of one-for-one relationships. These caveats should be kept in mind when interpreting the results.
 
 \newpage
-
-Working repo could be fount at: https://github.com/zzeng05/ZENG1-LIU2-727FINAL-scaVSeply.git
 
 # References
 
