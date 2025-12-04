@@ -245,7 +245,7 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
   )
 ```
 
--   BRIEF EXPLAIN HERE
+-   The stacked area chart shows how the composition of unemployment expectations has shifted over time. During recessions and early recovery periods, the share expecting 'more unemployment' rises sharply and dominates the distribution, while the share expecting 'less unemployment' collapses. In expansions, the pattern reverses and 'same' or 'less unemployment' responses become more common. These swings suggest that respondents’ unemployment expectations are highly cyclical and therefore promising candidates for leading indicators.
 
 ```{r}
 #| warning: false
@@ -332,7 +332,7 @@ head(UNEPLOY_R)
 head(Job_V)
 ```
 
-## Visualization 1. Lagged Time-Series of Consumer Sentiment and Unemployment Rate/Job Change
+## Visualization 1. Lagged Time-Series of Consumer Sentiment & Unemployment Rate/Job Change
 
 ```{r}
 #| warning: false
@@ -388,15 +388,15 @@ cs_vs_unemp <- function(data,
   unemp_label <- paste0("Unemp (t + ", lag_months, "m)")
   
   ggplot(df, aes(x = date)) +
-    # raw lines (lighter)
-    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.382) +
-    geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.382) +
+    # raw lines
+    geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.618) +
+    geom_line(aes(y = unrate_scaled, color = unemp_label), alpha = 0.618) +
     
-    # smoothed lines (highlighted)
+    # smoothed lines
     geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = unrate_scaled, color = unemp_label),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
       name   = "Consumer Sentiment Index",
@@ -430,9 +430,11 @@ cs_vs_unemp (macro, lag_months = 7)
 cs_vs_unemp (macro, lag_months = 8)
 ```
 
--   ANALYSIS HERE
--   EXPLAIN LOGISTICS OF SMOOTHING
--   ENDED UP NOT THAT CLEAR INDICATING
+-   The smoothed dual-axis plots indicate that the Consumer Sentiment Index and labor-market outcomes share broad cyclical movements: sentiment falls steeply during the Great Recession and the COVID-19 downturn, while unemployment spikes and payroll employment contracts. However, the relative timing is not perfectly stable. In some episodes sentiment begins to fall slightly before the unemployment rate rises, but in others the two move almost simultaneously. Likewise, job growth improves as sentiment recovers, but the relationship is noisy at monthly frequency.
+
+-   We overlay light raw lines with LOESS-smoothed curves to reduce monthly volatility and emphasize medium-run swings. Smoothing helps reveal that the major peaks and troughs of unemployment typically lag the troughs and peaks of sentiment by several months, but also makes clear that there is no single 'magic' lag that fits the entire sample.
+
+-   Overall, the level of consumer sentiment appears more contemporaneous than decisively leading with respect to unemployment and job growth. Sentiment is clearly informative about whether the economy is in a good or bad state, but it does not on its own deliver precise short-term forecasts of the labor market.
 
 ```{r}
 #| warning: false
@@ -442,7 +444,7 @@ cs_vs_unemp (macro, lag_months = 8)
 cs_vs_jobs <- function(data,
                        lag_months  = 3,
                        cs_limits   = c(40, 120),   # left y-axis
-                       jobs_limits = c(-1500, 1500)) { # right y-axis (thousands)
+                       jobs_limits = c(-1500, 1500)) { # right y-axis
   
   df <- data %>%
     arrange(date) %>%
@@ -465,15 +467,15 @@ cs_vs_jobs <- function(data,
   jobs_label <- paste0("Job change (t + ", lag_months, "m)")
   
   ggplot(df, aes(x = date)) +
-    # raw lines (lighter)
+    # raw lines
     geom_line(aes(y = cs, color = "Consumer Sentiment"), alpha = 0.382) +
     geom_line(aes(y = jobchg_scaled, color = jobs_label), alpha = 0.382) +
     
-    # smoothed lines (highlighted)
+    # smoothed lines
     geom_smooth(aes(y = cs, color = "Consumer Sentiment"),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = jobchg_scaled, color = jobs_label),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
       name   = "Consumer Sentiment Index",
@@ -491,7 +493,7 @@ cs_vs_jobs <- function(data,
       )
     ) +
     labs(
-      title = paste0("Consumer Sentiment vs Added Jobs (", lag_months, "-month lead)"),
+      title = paste0("Consumer Sentiment & Added Jobs (", lag_months, "-month lead)"),
       x     = "Date",
       color = NULL
     ) +
@@ -508,15 +510,16 @@ cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
 ```
 
--   ANALYSIS HERE
--   EXPLAIN TEST & FINDING ON DIFFERENT LAGS
--   EXPLAIN LOGISTICS OF SMOOTHING
+-   When we compare sentiment to future payroll job changes, the sign of the relationship is intuitive—low sentiment is associated with large job losses, and high sentiment with job gains—but the association is again diffuse. Around 2008–2009 and 2020, sharp drops in sentiment coincide with substantial negative job changes, while the subsequent recoveries in sentiment line up with strong job growth. Outside of these extreme episodes, however, the month-to-month co-movement is weaker.
 
+-   We experimented with leads from within 0 to 8 months. Short leads  primarily line up with contemporaneous movements, while moderate leads of 5–8 months show that exceptionally weak sentiment often precedes periods of continued job losses. Nonetheless, the visual evidence does not point to a single optimal lead; instead, sentiment seems to anticipate the direction of labor-market conditions over the next several quarters rather than exact turning dates.
+
+-   As with the unemployment plots, we apply LOESS smoothing to both series, plotting raw lines at low opacity and smoother curves on top. This helps us see underlying trends across recessions and expansions without over-interpreting short-lived spikes in monthly payroll data.
 \newpage
 
 ## Visualization 2. Net expectations vs Subsequent unemployment change
 
--   ADD LOGISTICS OF CALCULATING NET EXPECTATIONS OF UNEMPLOYMENT HERE! (MAYBE SHOW BRIEF DATAFRAME?)
+-   From Survey of Consumers, we also obtained the percentages of respondents who expect unemployment to be less, the same, or more during the next year, plus a small 'don’t know / no answer' category. We define a net expectations index as %Less – %More, which ranges roughly from −60 to +60 in our sample. A negative value indicates that more people expect unemployment to rise than to fall, and vice versa.
 
 ```{r}
 #| warning: false
@@ -544,14 +547,6 @@ expect_vs_unemp_scatter <- function(data,
   
   slope   <- coef(lm_fit)[["net_unemp_expect"]]
   r2      <- lm_sum$r.squared
-  
-  # print a brief statistical summary in the console
-  cat("\nHorizon:", horizon_months, "months\n")
-  cat("Correlation (net expectations, future Δunemp):",
-      round(cor_val, 3), "\n")
-  cat("Slope (OLS):", round(slope, 4),
-      "pp change in unemp per 1-pt net expectation\n")
-  cat("R-squared:", round(r2, 3), "\n\n")
   
   # scatter plot with tuned aesthetics
   ggplot(df, aes(x = net_unemp_expect, y = unrate_delta)) +
@@ -601,9 +596,9 @@ for (i in seq_along(horizons)) {
 plots_set
 ```
 
--   MAKE A CONCLUSION & INDICATION HERE!
+-   For each horizon from 1 to 12 months, we compute the change in the unemployment rate between month t and month (t + h) and regress this change on the net expectations index at time t. The resulting scatter plots and regression summaries show an increasingly strong negative relationship as the horizon lengthens: at a 3-month horizon the correlation is about −0.21 with a small negative slope, while by 9–12 months the correlation reaches roughly −0.4 and the slope is around −0.04 to −0.05 percentage points of unemployment per 1-point change in net expectations. In practical terms, a 20-point shift toward expecting more unemployment is associated with about a 0.8–1.0 percentage-point increase in the unemployment rate over the following year. R² values rise from near zero at short horizons to around 0.17–0.18 at 10–12 months, indicating that expectations explain a non-trivial, though still limited, share of future unemployment variation. Together, these results suggest that unemployment expectations operate as a moderately informative leading indicator of labor-market deterioration.
 
-## Visualization 3. Time series of net expectations vs actual unemployment - NEED TO FINE TUNE PLOT SIZES FOR ALL PLOTS
+## Visualization 3. Net expectations & Actual Unemployment 
 
 ```{r}
 #| warning: false
@@ -611,8 +606,8 @@ plots_set
 #| message: false
 expect_vs_unemp_dual <- function(data_macro2,
                                  lag_months   = 3,
-                                 cs_limits    = c(-60, 60),  # for net expectations
-                                 unemp_limits = c(2, 12)) {  # for unemployment
+                                 cs_limits    = c(-60, 60),# for net expectations
+                                 unemp_limits = c(2, 12)) {# for unemployment
   
   df <- data_macro2 %>%
     arrange(date) %>%
@@ -635,7 +630,6 @@ expect_vs_unemp_dual <- function(data_macro2,
   unemp_label <- paste0("Unemployment (t + ", lag_months, "m)")
   
   ggplot(df, aes(x = date)) +
-    # raw lines (lighter)
     geom_line(aes(y = net_unemp_expect,
                   color = "Net expectations (Less-More)"),
               alpha = 0.382) +
@@ -643,20 +637,20 @@ expect_vs_unemp_dual <- function(data_macro2,
                   color = unemp_label),
               alpha = 0.382) +
     
-    # smoothed lines (highlighted)
+    # smoothed lines
     geom_smooth(aes(y = net_unemp_expect,
                     color = "Net expectations (Less-More)"),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = unrate_scaled,
                     color = unemp_label),
-                se = FALSE, span = 0.2, linewidth = 1) +
+                se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
       name   = "Net (Less-More) unemployment expectations",
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = paste0("Unemployment rate (%) at t + ",
+        name  = paste0("Unemployment (%) at t + ",
                        lag_months, " months")
       )
     ) +
@@ -667,7 +661,7 @@ expect_vs_unemp_dual <- function(data_macro2,
       )
     ) +
     labs(
-      title = paste0("Net Unemployment Expectations vs Future Unemployment (",
+      title = paste0("Net Unemployment Expectations VS. Unemployment% (",
                      lag_months, "-month lead)"),
       x     = "Date",
       color = NULL
@@ -690,24 +684,26 @@ expect_vs_unemp_dual(macro2, lag_months = 11)
 expect_vs_unemp_dual(macro2, lag_months = 12)
 ```
 
--   EXPLAIN LOGISTICS
--   MAKE A CONCLUSION & INDICATION HERE!
+- To complement the scatter plots, we construct time-series overlays of the net unemployment expectations index and the unemployment rate shifted forward by various lead times. For each lead h, we rescaled the future unemployment rate to the same vertical range as the expectations index so both can be shown on a single axis. We then plot raw and smoothed lines for 0–12-month leads. This visualization emphasizes the timing of peaks and troughs rather than the exact linear relationship.
+
+- The time-series plots reinforce the scatter-plot evidence: net unemployment expectations tend to deteriorate ahead of increases in the unemployment rate and to improve ahead of declines. The alignment is especially clear around the 2008–2009 and 2020 recessions, where expectations begin to signal trouble several months before unemployment surges. While not perfectly synchronized—expectations sometimes move on false alarms or react to news that does not fully materialize—the patterns suggest that households absorb forward-looking information about the labor market and that this information shows up in the Survey of Consumers before it is fully visible in official unemployment statistics.
 
 \newpage
 
 # Implications
 
-**SOME REAL WORLD INDICATIONS.**
-
+|   Our findings imply that survey-based expectations can add value to traditional labor-market monitoring. Policy-makers and forecasters who track the Michigan survey might gain several months of advance warning about shifts in unemployment risk, particularly when net expectations move sharply negative. For central banks, a deterioration in unemployment expectations could signal upcoming slack in the labor market and downward pressure on wage growth; for fiscal authorities, it might justify earlier consideration of counter-cyclical support. At the same time, the modest variance explained (R-Squared) remind us that expectations are only one piece of the forecasting puzzle and should be combined with other indicators rather than used in isolation.
 \newpage
 
 # Conclusion & Outlook
 
-| 
+|   Our exploratory analysis shows that while the broad Consumer Sentiment Index co-moves with unemployment and job growth, it is the targeted expectations question on unemployment that carries the clearest predictive signal for future labor-market changes. Net expectations about unemployment are negatively correlated with subsequent changes in the unemployment rate, with the relationship strengthening over 6–12-month horizons. These patterns are consistent with the view that households respond not only to current conditions but also to news and perceptions about the near-term economic outlook.
+
+|   Looking ahead, several extensions would deepen this work. We could extend the sample back before 2008 to test whether the relationships hold across earlier cycles, estimate multivariate forecasting models that control for inflation and interest rates, and explore heterogeneity by income, age, or other demographic factors if micro-level survey data become available. Another natural step would be to compare the predictive content of Michigan expectations with other surveys (e.g., Conference Board, professional forecasters) or with financial-market measures of labor-market expectations.
 
 # Limitation
 
-| 
+|   This project has several important limitations. First, the analysis is confined to the post-2008 period, which may over-weight the unique dynamics of the Great Recession and the COVID-19 shock. Second, all relationships are estimated using simple correlations and bivariate regressions with overlapping horizons; we do not account for serial correlation or perform formal out-of-sample forecasting tests. Third, both sentiment and expectations are measured with survey error and may be influenced by factors unrelated to the labor market (e.g., political events), which we do not model. Finally, our dual-axis visualizations involve rescaling variables, which aids interpretation but can be misleading if taken as evidence of one-for-one relationships. These caveats should be kept in mind when interpreting the results.
 
 \newpage
 
