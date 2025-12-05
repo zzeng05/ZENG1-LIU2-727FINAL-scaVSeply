@@ -252,6 +252,8 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
 
 -   The stacked area chart shows how the composition of unemployment expectations has shifted over time. During recessions and early recovery periods, the share expecting 'more unemployment' rises sharply and dominates the distribution, while the share expecting 'less unemployment' collapses. In expansions, the pattern reverses and 'same' or 'less unemployment' responses become more common. These swings suggest that respondents’ unemployment expectations are highly cyclical and therefore promising candidates for leading indicators.
 
+\newpage
+
 ```{r}
 #| warning: false
 #| echo: false
