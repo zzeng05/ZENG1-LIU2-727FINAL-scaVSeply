@@ -83,7 +83,6 @@ Time-series comparisons confirm that expectations move ahead of realized unemplo
 #| warning: false
 #| echo: false
 #| message: false
-# Import Libraries
 library(tidyverse)
 library(lubridate)
 library(rvest)
@@ -208,7 +207,7 @@ UNEPLY_supp <- UNEPLY1 %>%
     more_unemp  = More,
     dk_unemp    = `DK; NA`,
     rel_unemp   = Relative,
-    net_unemp_expect = less_unemp - more_unemp
+    net_unemp_expect = more_unemp - less_unemp
   )
 
 UNEPLY_long <- UNEPLY_supp %>%
@@ -536,7 +535,7 @@ cs_vs_jobs(macro, lag_months =8)
 
 ## Visualization 2. Net expectations vs Subsequent unemployment change
 
-|   From Survey of Consumers, we also obtained the percentages of respondents who expect unemployment to be less, the same, or more during the next year, plus a small 'don’t know / no answer' category. We define a net expectations index as %Less – %More, which ranges roughly from −60 to +60 in our sample. A negative value indicates that more people expect unemployment to rise than to fall, and vice versa.
+|   From the Survey of Consumers, we also obtained the percentages of respondents who expect unemployment to be less, the same, or more during the next year, plus a small “don’t know / no answer” category. We summarize these answers in a net unemployment pessimism index defined as %More − %Less, which ranges roughly from −60 to +60 in our sample. Positive values indicate that more people expect unemployment to rise than to fall (pessimism), while negative values indicate that more people expect unemployment to fall than to rise (optimism).
 
 ```{r}
 #| warning: false
@@ -566,15 +565,14 @@ expect_vs_unemp_scatter <- function(data,
   lm_fit  <- lm(unrate_delta ~ net_unemp_expect, data = df)
   lm_sum  <- summary(lm_fit)
   
-  slope   <- coef(lm_fit)[['net_unemp_expect']]
+  slope   <- coef(lm_fit)[["net_unemp_expect"]]
   r2      <- lm_sum$r.squared
   
-  # scatter plot with tuned aesthetics
   ggplot(df, aes(x = net_unemp_expect, y = unrate_delta)) +
-    geom_hline(yintercept = 0, linetype = 'dashed', color = 'grey') +
-    geom_vline(xintercept = 0, linetype = 'dashed', color = 'grey') +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey") +
     geom_point(alpha = 0.382, size = 1.618) +
-    geom_smooth(method = 'lm', se = FALSE, color = 'firebrick', linewidth = 1) +
+    geom_smooth(method = "lm", se = FALSE, color = "firebrick", linewidth = 1) +
     scale_x_continuous(
       limits = x_limits,
       breaks = seq(x_limits[1], x_limits[2], by = 20)
@@ -585,21 +583,21 @@ expect_vs_unemp_scatter <- function(data,
     ) +
     labs(
       title = paste0(
-        'Net unemployment expectations vs. ',
-        horizon_months, '-month unemployment change'
+        "Net unemployment pessimism vs. ",
+        horizon_months, "-month unemployment change"
       ),
       subtitle = paste0(
-        'Slope ≈ ', round(slope, 3),
-        ' pp / 1-pt net expectation,  R² ≈ ', round(r2, 2)
+        "Slope ≈ ", round(slope, 3),
+        " pp / 1-pt net pessimism,  R² ≈ ", round(r2, 2)
       ),
-      x = 'Net Unemployment Expectation (t)',
-      y = paste0('Unemployment Change over next ',
-                 horizon_months, ' months')
+      x = "Net unemployment pessimism (%More − %Less, t)",
+      y = paste0("Unemployment Change in next ",
+                 horizon_months, " months %")
     ) +
     theme_minimal() +
     theme(
-      plot.title.position = 'plot',
-      legend.position = 'none'
+      plot.title.position = "plot",
+      legend.position = "none"
     )
 }
 
@@ -617,7 +615,7 @@ for (i in seq_along(horizons)) {
 plots_set
 ```
 
--   For each horizon from 1 to 12 months, we compute the change in the unemployment rate between month t and month (t + h) and regress this change on the net expectations index at time t. The resulting scatter plots and regression summaries show an increasingly strong negative relationship as the horizon lengthens: at a 3-month horizon the correlation is about −0.21 with a small negative slope, while by 9–12 months the correlation reaches roughly −0.4 and the slope is around −0.04 to −0.05 percentage points of unemployment per 1-point change in net expectations. In practical terms, a 20-point shift toward expecting more unemployment is associated with about a 0.8–1.0 percentage-point increase in the unemployment rate over the following year. R² values rise from near zero at short horizons to around 0.17–0.18 at 10–12 months, indicating that expectations explain a non-trivial, though still limited, share of future unemployment variation. Together, these results suggest that unemployment expectations operate as a moderately informative leading indicator of labor-market deterioration.
+-   For each horizon from 1 to 12 months, we compute the change in the unemployment rate between month t and month t + h and regress this change on the net unemployment pessimism index at time t (%More − %Less). The resulting scatter plots and regression summaries show an increasingly strong positive relationship as the horizon lengthens: at a 3-month horizon the correlation is about +0.21 with a small positive slope, while by 9–12 months the correlation reaches roughly +0.4 and the slope is around +0.04 to +0.05 percentage points of unemployment per 1-point increase in net pessimism. In practical terms, a 20-point shift toward expecting more unemployment is associated with about a 0.8–1.0 percentage-point increase in the unemployment rate over the following year. R² values rise from near zero at short horizons to around 0.17–0.18 at 10–12 months, indicating that expectations explain a non-trivial, though still limited, share of future unemployment variation. Together, these results suggest that the net pessimism index is a moderately informative leading indicator of labor-market deterioration.
 
 ## Visualization 3. Net expectations & Actual Unemployment 
 
@@ -631,8 +629,8 @@ plots_set
 #| fig-align: 'center'
 expect_vs_unemp_dual <- function(data_macro2,
                                  lag_months   = 3,
-                                 cs_limits    = c(-60, 60),# for net expectations
-                                 unemp_limits = c(2, 12)) {# for unemployment
+                                 cs_limits    = c(-60, 60), # for net pessimism
+                                 unemp_limits = c(2, 12)) { # for unemployment
   
   df <- data_macro2 %>%
     arrange(date) %>%
@@ -652,11 +650,11 @@ expect_vs_unemp_dual <- function(data_macro2,
       unrate_scaled = ex_min + (unrate_lead - ur_min) * (ex_rng / ur_rng)
     )
   
-  unemp_label <- paste0('Unemployment (t + ', lag_months, 'm)')
+  unemp_label <- paste0("Unemployment (t + ", lag_months, "m)")
   
   ggplot(df, aes(x = date)) +
     geom_line(aes(y = net_unemp_expect,
-                  color = 'Net expectations (Less-More)'),
+                  color = "Net expectations (More−Less)"),
               alpha = 0.382) +
     geom_line(aes(y = unrate_scaled,
                   color = unemp_label),
@@ -664,35 +662,35 @@ expect_vs_unemp_dual <- function(data_macro2,
     
     # smoothed lines
     geom_smooth(aes(y = net_unemp_expect,
-                    color = 'Net expectations (Less-More)'),
+                    color = "Net expectations (More−Less)"),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     geom_smooth(aes(y = unrate_scaled,
                     color = unemp_label),
                 se = FALSE, span = 0.168, linewidth = 0.618) +
     
     scale_y_continuous(
-      name   = 'Net (Less-More) unemployment expectations',
+      name   = "Net unemployment pessimism (%More − %Less)",
       limits = cs_limits,
       sec.axis = sec_axis(
         trans = ~ (.- ex_min) * (ur_rng / ex_rng) + ur_min,
-        name  = paste0('Unemployment at t + ',
-                       lag_months, ' months')
+        name  = paste0("Unemployment rate at t + ",
+                       lag_months, " months")
       )
     ) +
     scale_color_manual(
       values = setNames(
-        c('darkgreen', 'firebrick'),
-        c('Net expectations (Less-More)', unemp_label)
+        c("darkgreen", "firebrick"),
+        c("Net expectations (More−Less)", unemp_label)
       )
     ) +
     labs(
-      title = paste0('Net Unemployment Expectations VS. Unemployment % (',
-                     lag_months, '-month lead)'),
-      x     = 'Date',
+      title = paste0("Net Unemployment Pessimism vs Future Unemployment (",
+                     lag_months, "-month lead)"),
+      x     = "Date",
       color = NULL
     ) +
     theme_minimal() +
-    theme(legend.position = 'bottom')
+    theme(legend.position = "bottom")
 }
 
 expect_vs_unemp_dual(macro2, lag_months = 0)
@@ -711,7 +709,7 @@ expect_vs_unemp_dual(macro2, lag_months = 12)
 
 - To complement the scatter plots, we construct time-series overlays of the net unemployment expectations index and the unemployment rate shifted forward by various lead times. For each lead h, we rescaled the future unemployment rate to the same vertical range as the expectations index so both can be shown on a single axis. We then plot raw and smoothed lines for 0–12-month leads. This visualization emphasizes the timing of peaks and troughs rather than the exact linear relationship.
 
-- The time-series plots reinforce the scatter-plot evidence: net unemployment expectations tend to deteriorate ahead of increases in the unemployment rate and to improve ahead of declines. The alignment is especially clear around the 2008–2009 and 2020 recessions, where expectations begin to signal trouble several months before unemployment surges. While not perfectly synchronized—expectations sometimes move on false alarms or react to news that does not fully materialize—the patterns suggest that households absorb forward-looking information about the labor market and that this information shows up in the Survey of Consumers before it is fully visible in official unemployment statistics.
+- The time-series plots reinforce the scatter-plot evidence: net unemployment pessimism tends to rise ahead of increases in the unemployment rate and to fall ahead of declines. The alignment is especially clear around the 2008–2009 and 2020 recessions, where expectations begin to signal trouble several months before unemployment surges. While not perfectly synchronized—expectations sometimes move on false alarms or react to news that does not fully materialize—the patterns suggest that households absorb forward-looking information about the labor market and that this information shows up in the Survey of Consumers before it is fully visible in official unemployment statistics.
 
 \newpage
 
