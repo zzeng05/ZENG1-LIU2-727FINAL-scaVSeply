@@ -68,7 +68,7 @@ Consumer Sentiment co-moves with, but does not sharply lead, unemployment or job
 ***Finding 2.***
 Net unemployment expectations are systematically related to future unemployment changes.
 
-|   When we convert the expectations table into a net balance ('less' minus 'more' unemployment) and relate it to subsequent changes in the unemployment rate, we obtain consistently negative slopes and correlations that strengthen with the horizon (Visualization 2). For 6–12-month horizons, the correlation between net expectations and future unemployment changes reaches roughly −0.3 to −0.4, and a 10-point deterioration in net expectations is associated with about a 0.3–0.5 percentage-point increase in unemployment over the following year. Although the R-Squared values are modest (around 0.10–0.18), this pattern indicates that households' specific views about unemployment contain forward-looking information.
+|   When we convert the expectations table into a net balance ('more' minus 'less' unemployment) and relate it to subsequent changes in the unemployment rate, we obtain consistently negative slopes and correlations that strengthen with the horizon (Visualization 2). For 6–12-month horizons, the correlation between net expectations and future unemployment changes reaches roughly −0.3 to −0.4, and a 10-point deterioration in net expectations is associated with about a 0.3–0.5 percentage-point increase in unemployment over the following year. Although the R-Squared values are modest (around 0.10–0.18), this pattern indicates that households' specific views about unemployment contain forward-looking information.
 
 ***Finding 3.***
 Time-series comparisons confirm that expectations move ahead of realized unemployment around major turning points.
@@ -86,15 +86,14 @@ Time-series comparisons confirm that expectations move ahead of realized unemplo
 library(tidyverse)
 library(lubridate)
 library(rvest)
-library(zoo)        # for rolling correlations
-library(broom)      # for regression summaries
+library(zoo)
+library(broom)    
 library(ggplot2)
 library(stringr)
 library(readxl)
 library(httr)
 library(jsonlite)
 library(purrr)
-
 ```
 
 ```{r}
@@ -135,13 +134,12 @@ get_sca_table <- function(table_num,
 #| message: false
 #fetch & clean table1: Consumer Sentiment Index
 CS <- get_sca_table(1) %>%
-  # same logic as your cs_tables[[2]] cleaning
   rename(
     month_chr = X1,
     year_chr  = X2,
     cs_chr    = X3
   ) %>%
-  slice(-1) %>%  # drop the header row inside the table
+  slice(-1) %>%  # drop the header row
   mutate(
     month = as.integer(month_chr),
     year  = as.integer(year_chr),
@@ -250,7 +248,6 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
 ```
 
 -   The stacked area chart shows how the composition of unemployment expectations has shifted over time. During recessions and early recovery periods, the share expecting 'more unemployment' rises sharply and dominates the distribution, while the share expecting 'less unemployment' collapses. In expansions, the pattern reverses and 'same' or 'less unemployment' responses become more common. These swings suggest that respondents’ unemployment expectations are highly cyclical and therefore promising candidates for leading indicators.
-
 \newpage
 
 ```{r}
@@ -258,8 +255,7 @@ ggplot(UNEPLY_long, aes(x = date, y = share, fill = expectation)) +
 #| echo: false
 #| message: false
 # Fetch BLS Data
-
-bls_key <- '554489bce3f14059aaa2dbb976d62372' #need to change back to path before submission!!!
+bls_key <- read_file("/Users/zpzzz/Desktop/SURV727/bls_key.txt")
 
 # BLS series IDs:
 # - LNS14000000: Unemployment rate (CPS, seasonally adjusted)
@@ -373,8 +369,8 @@ head(macro)
 #| fig-align: 'center'
 cs_vs_unemp <- function(data,
                         lag_months   = 3,
-                        cs_limits    = c(30, 120),   # left y-axis
-                        unemp_limits = c(0, 15)) {   # right y-axis
+                        cs_limits    = c(30, 120),# left y-axis
+                        unemp_limits = c(0, 15)) { # right y-axis
   
   df <- data %>%
     arrange(date) %>%
@@ -456,10 +452,10 @@ cs_vs_unemp (macro, lag_months = 8)
 #| fig-height: 4
 #| out-width: '0.9\\linewidth'
 #| fig-align: 'center'
-# function to plot Consumer Sentiment vs Job Change with dual y-axes + smoothing
+# function to plot Consumer Sentiment vs Job Change
 cs_vs_jobs <- function(data,
                        lag_months  = 3,
-                       cs_limits   = c(40, 120),   # left y-axis
+                       cs_limits   = c(40, 120),  # left y-axis
                        jobs_limits = c(-1500, 1500)) { # right y-axis
   
   df <- data %>%
@@ -520,7 +516,6 @@ cs_vs_jobs <- function(data,
 }
 
 cs_vs_jobs(macro, lag_months =0)
-cs_vs_jobs(macro, lag_months =5)
 cs_vs_jobs(macro, lag_months =6)
 cs_vs_jobs(macro, lag_months =7)
 cs_vs_jobs(macro, lag_months =8)
@@ -605,7 +600,6 @@ expect_vs_unemp_scatter <- function(data,
 horizons <- 0:12
 
 plots_set <- vector('list', length(horizons))
-names(plots_set) <- paste0('h_', horizons, 'm')
 
 for (i in seq_along(horizons)) {
   plots_set[[i]] <- expect_vs_unemp_scatter(
